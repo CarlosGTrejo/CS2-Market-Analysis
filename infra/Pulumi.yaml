@@ -1,0 +1,10 @@
+name: CS2-Market-Analysis-ELT
+description: An ELT pipeline for analyzing CS2 Market data, provisioned by Pulumi, and orchestrated by Prefect.
+runtime:
+  name: python
+  options:
+    toolchain: uv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: gcp-python
