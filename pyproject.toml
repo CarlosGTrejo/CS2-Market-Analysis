@@ -4,9 +4,20 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = [
-    "dlt[filesystem,parquet]>=1.24.0",
+dependencies = ["dlt[filesystem,gs,parquet]>=1.24.0"]
+
+[dependency-groups]
+dev = [
     "prefect>=3.6.24",
     "pulumi>=3.228.0",
     "pulumi-gcp>=9.16.0",
+    "pulumi-prefect",
 ]
+
+[tool.uv.workspace]
+members = [
+    "infra/sdks/prefect",
+]
+
+[tool.uv.sources]
+pulumi-prefect = { workspace = true }

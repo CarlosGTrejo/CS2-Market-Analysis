@@ -1,1 +1,2 @@
+# We don't specify `gcp:project` here because we will pull it from env vars
 config: {}
