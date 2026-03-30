@@ -1,3 +1,4 @@
+import dlt
 from dlt.sources.helpers import requests
 from dlt.sources.rest_api import rest_api_source
 
@@ -32,19 +33,18 @@ source = rest_api_source(
     {
         "client": {
             "base_url": BASE_URL,
-            "session": custom_session,
+            # "session": custom_session,  # TODO: Uncomment for prod
             "paginator": {
                 "type": "offset",
                 "limit": 10,  # pagesize parameter value
                 "offset_param": "start",  # query param name for offset
                 "limit_param": "pagesize",  # query param name for limit
                 "total_path": "total_count",  # JSONPath to total count in response
-                # "maximum_offset": 10,  # For development/testing, limiting to the first page (10 items)
             },
         },
         "resources": [
             {
-                "name": "CS2_market_items",
+                "name": "items",
                 "endpoint": {
                     "path": "search/render/",
                     "data_selector": "results",
@@ -55,5 +55,22 @@ source = rest_api_source(
     }
 )
 
-sample_items = list(source.resources["CS2_market_items"])[0]
-print(f"Sample items: {sample_items}")
+pipeline = dlt.pipeline(
+    pipeline_name="ingest_cs2_items",
+    destination="filesystem",
+    dataset_name="cs2_market_data",
+)
+
+
+# TODO: uncomment and cleanup for prod
+# PROD:
+# load_info = pipeline.run(source)
+
+# DEV:
+# $env:DESTINATION__FILESYSTEM__BUCKET_URL="gs://data-lake_test-bucket"
+load_info = pipeline.run(
+    source.add_limit(1), write_disposition="replace", dataset_name="dev"
+)
+
+
+print(load_info)
