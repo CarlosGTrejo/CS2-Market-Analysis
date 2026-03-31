@@ -1,0 +1,24 @@
+cs2_market_analysis:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GOOGLE_PROJECT') }}"
+      dataset: cs2_market_dwh_dev
+      location: "{{ env_var('GCP_REGION') }}"
+      threads: 4
+      priority: interactive
+      timeout_seconds: 300
+      retries: 1
+
+    prod:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GOOGLE_PROJECT') }}"
+      dataset: cs2_market_dwh_prod
+      location: "{{ env_var('GCP_REGION') }}"
+      threads: 4
+      priority: batch
+      timeout_seconds: 600
+      retries: 3

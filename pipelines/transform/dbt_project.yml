@@ -1,0 +1,23 @@
+name: "cs2_market_analysis"
+version: "1.0.0"
+config-version: 2
+
+profile: "cs2_market_analysis"
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  cs2_market_analysis:
+    +materialized: table
+
+flags:
+  send_anonymous_usage_stats: false
