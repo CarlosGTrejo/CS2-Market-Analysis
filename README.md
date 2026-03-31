@@ -27,6 +27,7 @@ This project uses the modern data stack:
 
 ## Project Structure
 
+<!-- TODO: Verify project structure reflects most recent changes -->
 ```
 CS2-Market-Analysis/
 ├── .python-version             # Specifies the Python version for uv
@@ -63,7 +64,7 @@ CS2-Market-Analysis/
 ```
 
 ## Quick Start (Frictionless Deployment)
-
+<!-- TODO: Verify quickstart prerequisites and setup instructions -->
 ### 1. Prerequisites
 
 - Accounts:
@@ -113,14 +114,6 @@ uv run --env-file .env flows/deploy.py
 
 ## Documentation & Notes
 
-### GCP Infrastructure
-
-- Service accounts are created with least privilege for both dlt and dbt to access GCS and BigQuery.
-  - dbt service account permissions:
-    - BigQuery Data Editor
-    - BigQuery Job User
-    - BigQuery User
-
 #### Relevant Docs
 
 - Prefect:
@@ -147,24 +140,20 @@ uv run --env-file .env flows/deploy.py
 
 ---
 
-## README TODOs
-
-- Explain why we are using Google Cloud Run Push (cloud run push scales to zero, only pay for exact seconds flow is running)
-
-
----
-
 ## Tasks
 
 - [x] Initialize **Python** project with `uv init`
-- [/] Add **Python dependencies** for:
+- [x] Add **Python dependencies** for:
   - [x] development: `uv add --dev prefect pulumi pulumi-gcp`
   - [x] extract-load pipeline: `uv add "dlt[filesystem,gs,parquet]"`
-  - [ ] transform pipeline: dbt Fusion
 - [/] Create pipelines
   - [x] dlt pipeline for cs2 market items (extract & load to GCS/BigQuery)
   - [x] dlt pipeline for cs2 market item price history (extract & load to GCS/BigQuery)
   - [/] dbt transformations for cleaned and modeled tables in BigQuery
+    - [/] items staging model
+    - [/] item price history staging model
+- [x] Initialize **dbt** project
+  - [x] Add BigQuery adapter
 - [x] Initialize **Prefect** project with `prefect init`
 - [ ] Create prefect workflow
   - [ ] Task to run dlt pipeline (extract & load)
@@ -177,9 +166,16 @@ uv run --env-file .env flows/deploy.py
   - [ ] BigQuery dataset for data warehouse
   - [x] BigQuery external tables pointing to raw data in GCS Bucket
   - [ ] Service accounts with least privilege for dlt and dbt
-    - [ ] IAM permissions for service accounts
+    - dbt service account permissions:
+      - BigQuery Data Editor
+      - BigQuery Job User
+      - BigQuery User
+    - dlt service account permissions:
+      - what is needed to write to GCS bucket?
   - [ ] Google Artifact Registry for container images (for Cloud Run Push)
   - [ ] Looker Studio BI dashboard (if possible via IaC, otherwise document manual steps)
-- [x] Initialize **dbt** project
-  - [x] Add BigQuery adapter
 - [ ] Explore using **mise** to install all tools needed for the project.
+- [ ] README:
+  - [ ] Explain choices and decision of our stack and deployment stragegy in the README.
+    - e.g. why we are using Google Cloud Run Push? Cloud run push scales to zero, only pay for exact seconds flow is running
+  - [ ] Explain our problem statement in the README
