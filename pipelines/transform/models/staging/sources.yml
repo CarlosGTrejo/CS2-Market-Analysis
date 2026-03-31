@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: raw_market_data
+    description: "Raw CS2 market data loaded via dlt, provisioned as BigQuery external tables by Pulumi."
+    tables:
+      - name: external_items
+        description: "Raw CS2 market items extracted by dlt from Steam API, stored in GCS as parquet files."
+      
+      - name: external_item_price_history
+        description: "Raw CS2 market item price history extracted by dlt from Steam API, stored in GCS as parquet files."
