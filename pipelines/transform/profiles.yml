@@ -1,3 +1,5 @@
+# TODO: verify that our profiles.yml has the best config values for prod, and
+#       that it utilizes consistent naming and refernces the correct dataset across the project
 cs2_market_analysis:
   target: dev
   outputs:
