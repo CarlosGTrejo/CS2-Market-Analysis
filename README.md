@@ -146,12 +146,13 @@ uv run --env-file .env flows/deploy.py
 - [x] Add **Python dependencies** for:
   - [x] development: `uv add --dev prefect pulumi pulumi-gcp`
   - [x] extract-load pipeline: `uv add "dlt[filesystem,gs,parquet]"`
-- [/] Create pipelines
+- [x] Create pipelines
   - [x] dlt pipeline for cs2 market items (extract & load to GCS/BigQuery)
   - [x] dlt pipeline for cs2 market item price history (extract & load to GCS/BigQuery)
-  - [/] dbt transformations for cleaned and modeled tables in BigQuery
-    - [/] items staging model
-    - [/] item price history staging model
+  - [x] dbt transformations for cleaned and modeled tables in BigQuery
+    - [x] items staging model
+    - [x] item price history staging model
+    - [x] add documentation and tests to dbt models
 - [x] Initialize **dbt** project
   - [x] Add BigQuery adapter
 - [x] Initialize **Prefect** project with `prefect init`
@@ -174,6 +175,8 @@ uv run --env-file .env flows/deploy.py
       - what is needed to write to GCS bucket?
   - [ ] Google Artifact Registry for container images (for Cloud Run Push)
   - [ ] Looker Studio BI dashboard (if possible via IaC, otherwise document manual steps)
+- Investigate if we should enable metadata caching for performance:
+  - [Metadata caching for Performance BigQuery](https://docs.cloud.google.com/bigquery/docs/biglake-intro?authuser=1&hl=en#metadata_caching_for_performance)
 - [ ] Explore using **mise** to install all tools needed for the project.
 - [ ] README:
   - [ ] Explain choices and decision of our stack and deployment stragegy in the README.
