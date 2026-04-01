@@ -19,9 +19,12 @@ clean-targets:
 
 models:
   cs2_market_analysis:
-    +materialized: table
     staging:
       +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table
 
 flags:
   send_anonymous_usage_stats: false
