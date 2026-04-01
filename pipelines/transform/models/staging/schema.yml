@@ -12,6 +12,7 @@ models:
         description: >
           String identifier for the market bucket group, used to link to the dim_item_bucket_group dimension table.
           This is a broader categorization than class_id (i.e. there are less bucket groups than classes).
+        data_type: STRING
       - name: market_bucket_group_name
         description: >
           Name of the market bucket group, providing a human-readable label for the market_bucket_group_id.
