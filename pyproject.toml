@@ -13,15 +13,13 @@ dev = [
     "pulumi-gcp>=9.16.0",
     "pulumi-prefect",
 ]
-inspection = [
-    "dlt[workspace]>=1.24.0",
-    "marimo>=0.21.1",
-]
+inspection = ["dlt[workspace]>=1.24.0", "marimo>=0.21.1"]
 
 [tool.uv.workspace]
-members = [
-    "infra/sdks/prefect",
-]
+members = ["infra/sdks/prefect"]
 
 [tool.uv.sources]
 pulumi-prefect = { workspace = true }
+
+[tool.ty.environment]
+extra-paths = ["infra/sdks/prefect"]
