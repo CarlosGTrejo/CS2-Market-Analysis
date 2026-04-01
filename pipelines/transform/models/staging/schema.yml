@@ -23,8 +23,8 @@ models:
           Seems to be even broader than market bucket group.
       - name: name_color
         description: Hex color code of the item name, which can indicate rarity or special attributes (e.g., pink for 'Covert' items)
-      - name: is_tradeable
-        description: Boolean flag indicating whether the item is tradeable on the market.
+      - name: is_tradable
+        description: Boolean flag indicating whether the item is tradable on the market.
       - name: is_commodity
         description: >
           Boolean indicating if the item is a commodity, which means it has no distinct attributes, like a sticker capsule.

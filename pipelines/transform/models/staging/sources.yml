@@ -49,7 +49,7 @@ sources:
             description: "URL for the asset's icon."
           - name: asset_description__tradable
             data_type: INTEGER
-            description: "Flag indicating whether the item is tradeable on the market."
+            description: "Flag indicating whether the item is tradable on the market."
           - name: asset_description__name
             data_type: STRING
             description: "Duplicate item name column."
