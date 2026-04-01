@@ -1,0 +1,71 @@
+version: 2
+
+models:
+  - name: dim_item
+    description: >
+      Core dimension table containing all static and slowly changing attributes 
+      for CS2 market items. Denormalized for easier querying.
+    columns:
+      - name: item_name
+        description: Name of the market item. Serves as the natural primary key.
+        tests:
+          - unique
+          - not_null
+      - name: class_id
+        description: Identifier for the item class.
+      - name: market_bucket_group_id
+        description: String identifier for the market bucket group.
+      - name: market_bucket_group_name
+        description: Name of the market bucket group.
+      - name: item_type
+        description: Type of the item (e.g. 'Covert Rifle', 'Base Grade Container', etc.).
+      - name: name_color
+        description: Hex color code indicating rarity or special attributes.
+      - name: is_tradable
+        description: Boolean flag indicating if the item is tradable.
+      - name: is_commodity
+        description: Boolean indicating if the item is a distinct commodity without variations.
+
+  - name: fct_market_snapshot_daily
+    description: >
+      Fact table built from daily snapshot data. Tracks market supply (sell listings) 
+      and current listing prices.
+    columns:
+      - name: snapshot_date
+        description: Date when the market snapshot was taken.
+        tests:
+          - not_null
+      - name: item_name
+        description: Name of the market item. Serves as a foreign key to dim_item.
+        tests:
+          - not_null
+      - name: sell_listings_count
+        description: Number of active sell listings on the market.
+      - name: sell_price_cents
+        description: Lowest active sell price in cents.
+      - name: sell_price_usd
+        description: Lowest active sell price in USD.
+      - name: sale_price_usd_from_text
+        description: Highest willingness-to-pay buy order price, converted to USD.
+
+  - name: fct_volume_daily
+    description: >
+      Fact table tracking the daily historical sales volume and price 
+      fluctuations for market items.
+    columns:
+      - name: date
+        description: The date of the sales activities.
+        tests:
+          - not_null
+      - name: item_name
+        description: Name of the market item. Serves as a foreign key to dim_item.
+        tests:
+          - not_null
+      - name: sales_volume
+        description: Total quantity of the item sold on this date.
+      - name: avg_price_usd
+        description: Average actual sale price in USD on this date.
+      - name: min_price_usd
+        description: Minimum actual sale price in USD on this date.
+      - name: max_price_usd
+        description: Maximum actual sale price in USD on this date.

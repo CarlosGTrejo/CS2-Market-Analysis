@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: int_items_latest
+    description: >
+      Intermediate model that deduplicates stg_items to extract the latest 
+      attributes for each item, acting as the primary source of truth.
+    columns:
+      - name: item_name
+        description: Name of the market item. Acts as the primary key.
+        tests:
+          - unique
+          - not_null
+      - name: class_id
+      - name: market_bucket_group_id
+      - name: market_bucket_group_name
+      - name: item_type
+      - name: name_color
+      - name: is_tradable
+      - name: is_commodity
+
+  - name: int_item_price_history_daily
+    description: >
+      Intermediate model that aggregates the granular price_timestamp 
+      from stg_item_price_history to a daily grain.
+    columns:
+      - name: item_name
+        description: Name of the market item.
+        tests:
+          - not_null
+      - name: price_date
+        description: The aggregated date (at daily grain) for the price and volume metrics.
+        tests:
+          - not_null
+      - name: total_sales_volume
+        description: Total quantity of the item sold during the day.
+      - name: avg_price_usd
+        description: Average sale price of the item in USD during the day.
+      - name: min_price_usd
+        description: Minimum sale price of the item in USD during the day.
+      - name: max_price_usd
+        description: Maximum sale price of the item in USD during the day.
