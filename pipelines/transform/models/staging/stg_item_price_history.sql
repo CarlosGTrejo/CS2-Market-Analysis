@@ -1,35 +1,35 @@
-WITH source AS (
-    SELECT * FROM {{ source('raw_market_data', 'item_price_history_external') }}
+with source as (
+    select * from {{ source('raw_market_data', 'item_price_history_external') }}
 ),
 
-renamed_and_casted AS (
-    SELECT
+renamed_and_casted as (
+    select
         -- Identifiers
-        CAST(market_hash_name AS STRING) AS item_name,
+        cast(market_hash_name as string) as item_name,
         
         -- Dates/Times
         -- The Steam market API often returns dates like "Jul 16 2013 01: +0". 
-        PARSE_TIMESTAMP('%b %d %Y %H: +0', date) AS price_timestamp,
+        parse_timestamp('%b %d %Y %H: +0', date) as price_timestamp,
         
         -- Metrics
-        CAST(price AS NUMERIC) AS price_usd,
-        CAST(volume AS INT64) AS sales_volume,
+        cast(price as numeric) as price_usd,
+        cast(volume as int64) as sales_volume,
         
         -- dlt pipeline metadata (optional, but good for lineage/auditing)
-        CAST(_dlt_id AS STRING) AS dlt_id,
-        CAST(_dlt_load_id AS STRING) AS dlt_load_id
-    FROM source
+        cast(_dlt_id as string) as dlt_id,
+        cast(_dlt_load_id as string) as dlt_load_id
+    from source
 ),
 
-deduplicated AS (
-    SELECT *
-    FROM renamed_and_casted
+deduplicated as (
+    select *
+    from renamed_and_casted
     -- BigQuery best-practice deduplication: Keep the most recently loaded record per item & timestamp
-    QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY item_name, price_timestamp
-        ORDER BY dlt_load_id DESC
+    qualify row_number() over (
+        partition by item_name, price_timestamp
+        order by dlt_load_id desc
     ) = 1
 )
 
-SELECT *
-FROM deduplicated
+select *
+from deduplicated

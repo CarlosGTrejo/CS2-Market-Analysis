@@ -1,49 +1,49 @@
-WITH source AS (
-    SELECT * FROM {{ source('raw_market_data', 'items_external') }}
+with source as (
+    select * from {{ source('raw_market_data', 'items_external') }}
 ),
 
-renamed_and_casted AS (
-    SELECT
+renamed_and_casted as (
+    select
         -- Identifiers
-        CAST(asset_description__market_hash_name AS STRING) AS item_name,
-        SAFE_CAST(asset_description__classid AS INT64) AS class_id,
-        CAST(asset_description__market_bucket_group_id AS STRING) AS market_bucket_group_id,
+        cast(asset_description__market_hash_name as string) as item_name,
+        safe_cast(asset_description__classid as int64) as class_id,
+        cast(asset_description__market_bucket_group_id as string) as market_bucket_group_id,
         
         -- Characteristics
-        CAST(asset_description__type AS STRING) AS item_type,
-        CAST(asset_description__name_color AS STRING) AS name_color,
-        CAST(asset_description__market_bucket_group_name AS STRING) AS market_bucket_group_name,
+        cast(asset_description__type as string) as item_type,
+        cast(asset_description__name_color as string) as name_color,
+        cast(asset_description__market_bucket_group_name as string) as market_bucket_group_name,
         
         -- Booleans
-        CAST(asset_description__tradable AS BOOL) AS is_tradable,
-        CAST(asset_description__commodity AS BOOL) AS is_commodity,
+        cast(asset_description__tradable as BOOL) as is_tradable,
+        cast(asset_description__commodity as BOOL) as is_commodity,
         
         -- Pricing & Metrics
-        SAFE_CAST(sell_listings AS INT64) AS sell_listings_count,
-        SAFE_CAST(sell_price AS INT64) AS sell_price_cents,
-        SAFE_CAST(sell_price AS NUMERIC) / 100 AS sell_price_usd,
+        safe_cast(sell_listings as int64) as sell_listings_count,
+        safe_cast(sell_price as int64) as sell_price_cents,
+        safe_cast(sell_price as numeric) / 100 as sell_price_usd,
         -- Extract numbers/decimals from text and cast safely:
-        SAFE_CAST(REGEXP_REPLACE(sale_price_text, r'[^0-9\.]', '') AS NUMERIC) AS sale_price_usd_from_text,
+        safe_cast(regexp_replace(sale_price_text, r'[^0-9\.]', '') as numeric) as sale_price_usd_from_text,
         
         -- Dates
-        SAFE_CAST(snapshot_date AS DATE) AS snapshot_date,
+        safe_cast(snapshot_date as date) as snapshot_date,
         
         -- dlt pipeline metadata
-        CAST(_dlt_id AS STRING) AS dlt_id,
-        CAST(_dlt_load_id AS STRING) AS dlt_load_id
+        cast(_dlt_id as string) as dlt_id,
+        cast(_dlt_load_id as string) as dlt_load_id
 
-    FROM source
+    from source
 ),
 
-deduplicated AS (
-    SELECT *
-    FROM renamed_and_casted
+deduplicated as (
+    select *
+    from renamed_and_casted
     -- BigQuery best-practice deduplication: Keep the most recent/populated record per item per date
-    QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY item_name, snapshot_date 
-        ORDER BY dlt_load_id DESC, sell_listings_count DESC
+    qualify row_number() over (
+        partition by item_name, snapshot_date 
+        order by dlt_load_id desc, sell_listings_count desc
     ) = 1
 )
 
-SELECT *
-FROM deduplicated
+select *
+from deduplicated
