@@ -27,7 +27,7 @@ models:
         description: Boolean flag indicating whether the item is tradeable on the market.
       - name: is_commodity
         description: >
-          Boolean indicating if the item is a commodity, which means it has no distinct attributes, like a stiker capsule.
+          Boolean indicating if the item is a commodity, which means it has no distinct attributes, like a sticker capsule.
           Non-commodity items can have different variations (e.g., different wear levels, StatTrak versions) that affect their market value.
       - name: sell_listings_count
         description: Number of active sell listings for the item on the market, indicating its current supply.
