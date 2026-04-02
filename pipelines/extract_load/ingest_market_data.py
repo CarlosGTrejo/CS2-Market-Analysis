@@ -138,27 +138,32 @@ def extract_price_history(item):
     return []
 
 
-pipeline = dlt.pipeline(
-    pipeline_name="ingest_cs2_items",
-    destination="filesystem",
-    dataset_name="cs2_market",
-)
+def run_ingest():
+    pipeline = dlt.pipeline(
+        pipeline_name="ingest_cs2_items",
+        destination="filesystem",
+        dataset_name="cs2_market",
+    )
 
-items_data_source.resources[
-    "items"
-]  # Add `.add_limit(2)` to test with fewer items while developing
-data_to_load = [
-    items_data_source,
-    items_data_source | extract_price_history,
-]
+    items_data_source.resources["items"].add_limit(
+        1
+    )  # to test with fewer items while developing
+
+    data_to_load = [
+        items_data_source,
+        items_data_source | extract_price_history,
+    ]
+
+    # DEV:
+    # $env:DESTINATION__FILESYSTEM__BUCKET_URL="gs://data-lake_test-bucket"
+    load_info = pipeline.run(
+        data_to_load,
+        loader_file_format="parquet",
+    )
+
+    print(load_info)
+    return load_info
 
 
-# DEV:
-# $env:DESTINATION__FILESYSTEM__BUCKET_URL="gs://data-lake_test-bucket"
-load_info = pipeline.run(
-    data_to_load,
-    loader_file_format="parquet",
-)
-
-
-print(load_info)
+if __name__ == "__main__":
+    run_ingest()
