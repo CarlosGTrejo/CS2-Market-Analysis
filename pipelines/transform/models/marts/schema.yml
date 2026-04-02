@@ -8,7 +8,7 @@ models:
     columns:
       - name: item_name
         description: Name of the market item. Serves as the natural primary key.
-        tests:
+        data_tests:
           - unique
           - not_null
       - name: class_id
@@ -33,11 +33,11 @@ models:
     columns:
       - name: snapshot_date
         description: Date when the market snapshot was taken.
-        tests:
+        data_tests:
           - not_null
       - name: item_name
         description: Name of the market item. Serves as a foreign key to dim_item.
-        tests:
+        data_tests:
           - not_null
       - name: sell_listings_count
         description: Number of active sell listings on the market.
@@ -55,11 +55,11 @@ models:
     columns:
       - name: date
         description: The date of the sales activities.
-        tests:
+        data_tests:
           - not_null
       - name: item_name
         description: Name of the market item. Serves as a foreign key to dim_item.
-        tests:
+        data_tests:
           - not_null
       - name: sales_volume
         description: Total quantity of the item sold on this date.

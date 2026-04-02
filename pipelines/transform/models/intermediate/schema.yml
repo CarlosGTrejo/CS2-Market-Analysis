@@ -8,7 +8,7 @@ models:
     columns:
       - name: item_name
         description: Name of the market item. Acts as the primary key.
-        tests:
+        data_tests:
           - unique
           - not_null
       - name: class_id
@@ -26,11 +26,11 @@ models:
     columns:
       - name: item_name
         description: Name of the market item.
-        tests:
+        data_tests:
           - not_null
       - name: price_date
         description: The aggregated date (at daily grain) for the price and volume metrics.
-        tests:
+        data_tests:
           - not_null
       - name: total_sales_volume
         description: Total quantity of the item sold during the day.
