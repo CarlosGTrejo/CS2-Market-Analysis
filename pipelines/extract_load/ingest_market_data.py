@@ -59,7 +59,7 @@ items_data_source = rest_api_source(
         },
         "resources": [
             {
-                "name": "items",
+                "name": "items_raw",
                 "endpoint": {
                     "path": "search/render/",
                     "data_selector": "results",
@@ -115,16 +115,16 @@ def remove_redundant_columns(item):
     if asset:
         asset.pop("name", None)
         asset.pop("market_name", None)
-        asset.pop("app_id", None)
+        asset.pop("appid", None)
         asset.pop("icon_url", None)
     return item
 
 
-items_data_source.resources["items"].add_map(add_snapshot_date)
-items_data_source.resources["items"].add_map(remove_redundant_columns)
+items_data_source.resources["items_raw"].add_map(add_snapshot_date)
+items_data_source.resources["items_raw"].add_map(remove_redundant_columns)
 
 bigquery_adapter(
-    items_data_source.resources["items"],
+    items_data_source.resources["items_raw"],
     partition="snapshot_date",
     cluster=["asset_description__market_hash_name"],
 )
@@ -136,12 +136,12 @@ bigquery_adapter(
 class PriceRecord(TypedDict):
     market_hash_name: str
     date: Annotated[datetime, {"data_type": "timestamp"}]
-    price: Annotated[float, {"data_type": "NUMERIC"}]
+    price: Annotated[float, {"data_type": "DECIMAL"}]
     volume: Annotated[int, {"data_type": "INT64"}]
 
 
 @dlt.transformer(
-    name="item_price_history",
+    name="item_price_history_raw",
     parallelized=True,  # Parallelize network-heavy scraping
     write_disposition="merge",
     primary_key=["market_hash_name", "date"],
@@ -206,7 +206,7 @@ def run_ingest():
     )
 
     # TODO: remove after finished with development
-    items_data_source.resources["items"].add_limit(1)
+    items_data_source.resources["items_raw"].add_limit(1)
 
     # Apply BigQuery-specific hints to transformer output
     item_price_history_configured = bigquery_adapter(
