@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('raw_market_data', 'item_price_history_external') }}
+    select * from {{ source('raw_market_data', 'item_price_history_raw') }}
 ),
 
 renamed_and_casted as (
@@ -8,8 +8,7 @@ renamed_and_casted as (
         cast(market_hash_name as string) as item_name,
         
         -- Dates/Times
-        -- The Steam market API often returns dates like "Jul 16 2013 01: +0". 
-        parse_timestamp('%b %d %Y %H: +0', date) as price_timestamp,
+        cast(date as timestamp) as price_timestamp,
         
         -- Metrics
         cast(price as numeric) as price_usd,

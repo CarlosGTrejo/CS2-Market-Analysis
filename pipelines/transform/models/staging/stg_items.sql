@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('raw_market_data', 'items_external') }}
+    select * from {{ source('raw_market_data', 'items_raw') }}
 ),
 
 renamed_and_casted as (
