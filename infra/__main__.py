@@ -7,10 +7,10 @@ import pulumi
 import pulumi_gcp as gcp
 import pulumi_prefect as prefect
 
-region = os.getenv("GCP_REGION")
+region = os.getenv("GOOGLE_CLOUD_REGION")
 if not region:
     raise ValueError(
-        "GCP_REGION environment variable must be set. Add it to .env file.\n"
+        "GOOGLE_CLOUD_REGION environment variable must be set. Add it to .env file.\n"
         "Valid regions: https://docs.cloud.google.com/storage/docs/locations#location-r"
     )
 
@@ -23,7 +23,8 @@ bucket = gcp.storage.Bucket(
     "cs2_market_lake",
     name=f"{gcp_project}-cs2-data-lake-{stack}",
     location=region,
-    force_destroy=True,
+    force_destroy=not is_prod,  # Prevent accidental deletion of prod data with force_destroy in non-prod only
+    uniform_bucket_level_access=True,
 )
 
 # 2. Create Google Artifact Registry for docker images
@@ -62,9 +63,9 @@ gcp.storage.BucketIAMMember(
 
 # Project level roles
 roles = [
-    "roles/bigquery.dataEditor",  # For dbt to transform data
-    "roles/bigquery.jobUser",  # For dbt to run queries
-    "roles/bigquery.user",  # For dbt to read from BigQuery
+    "roles/bigquery.dataEditor",  # As specified in dlt and dbt docs
+    "roles/bigquery.jobUser",  # As specified in dlt and dbt docs
+    "roles/bigquery.readSessionUser",  # As specified in dlt docs for BigQuery
     "roles/run.developer",  # For Prefect to push to Cloud Run
     "roles/iam.serviceAccountUser",  # For Prefect to attach this SA to Cloud Run
 ]
@@ -89,9 +90,8 @@ sa_key = gcp.serviceaccount.Key(
 # 7. Use Prefect Provider to securely send the key to Prefect Cloud
 def create_gcp_creds_data(private_key_data: str) -> str:
     decoded = base64.b64decode(private_key_data).decode("utf-8")
-    # parsed = json.loads(decoded)
-    # return json.dumps({"service_account_info": parsed})
-    return decoded
+    parsed = json.loads(decoded)
+    return json.dumps({"service_account_info": parsed})
 
 
 gcp_credentials_block = prefect.Block(
@@ -103,7 +103,8 @@ gcp_credentials_block = prefect.Block(
 
 
 # 8. Create Cloud Run Push Work Pool
-def create_job_template(args: list[Any]) -> str:
+def create_job_template(args: list[str]) -> str:
+    block_name, sa_email = args[0], args[1]
     return json.dumps(
         {
             "variables": {
@@ -123,7 +124,13 @@ def create_job_template(args: list[Any]) -> str:
                     "credentials": {
                         "type": "string",
                         "title": "GCP Credentials",
-                        "default": f"{{{{ prefect.blocks.gcp-credentials.{args[0]} }}}}",
+                        "default": f"{{{{ prefect.blocks.gcp-credentials.{block_name} }}}}",
+                    },
+                    "service_account": {
+                        "type": "string",
+                        "title": "Service Account Email",
+                        "default": sa_email,
+                        "description": "GCP service account email for Cloud Run execution.",
                     },
                 },
             },
@@ -131,6 +138,7 @@ def create_job_template(args: list[Any]) -> str:
                 "image": "{{ image }}",
                 "region": "{{ region }}",
                 "credentials": "{{ credentials }}",
+                "service_account": "{{ service_account }}",
             },
         }
     )
@@ -140,55 +148,21 @@ cloud_run_push_pool = prefect.WorkPool(
     "cloud-run-push-pool",
     name=f"cs2-push-pool-{stack}",
     type="cloud-run:push",
-    # TODO: verify that we are using the correct pulumi design patterns. Are we sure it's not supposed to be `.apply(...)` since we are only working with one output?
-    base_job_template=pulumi.Output.all(gcp_credentials_block.name).apply(
-        create_job_template  # type: ignore
-    ),  # type: ignore
-)
-
-# 9. BigQuery External Tables with dynamic bucket paths
-items_external_table = gcp.bigquery.Table(
-    "items_external",
-    dataset_id=bq_dataset.dataset_id,
-    table_id="items_external",
-    external_data_configuration=gcp.bigquery.TableExternalDataConfigurationArgs(
-        source_uris=[
-            pulumi.Output.format(
-                "{bucket_url}/cs2_market_data/items/*.parquet", bucket_url=bucket.url
-            )
-        ],
-        source_format="PARQUET",
-        autodetect=True,
-    ),
-    deletion_protection=is_prod,
-)
-
-item_price_history_external_table = gcp.bigquery.Table(
-    "item_price_history_external",
-    dataset_id=bq_dataset.dataset_id,
-    table_id="item_price_history_external",
-    external_data_configuration=gcp.bigquery.TableExternalDataConfigurationArgs(
-        source_uris=[
-            pulumi.Output.format(
-                "{bucket_url}/cs2_market_data/item_price_history/*.parquet",
-                bucket_url=bucket.url,
-            )
-        ],
-        source_format="PARQUET",
-        autodetect=True,
-    ),
-    deletion_protection=is_prod,
+    base_job_template=pulumi.Output.all(  # type: ignore
+        gcp_credentials_block.name, pipeline_sa.email
+    ).apply(create_job_template),  # type: ignore
 )
 
 
-# 10. Frictionless Outputs
+# 9. Frictionless Outputs
 def format_outputs(args: list[Any]) -> str:
     return f"""\n
 ===============================================================
            Infrastructure successfully provisioned! 
 ===============================================================
 
-The DWH tables and Prefect GCP block have been setup automatically.
+The DWH dataset and Prefect GCP block have been setup automatically.
+Note: dlt pipeline will create the initial BigQuery tables automatically.
 
 * GCS Bucket for Data Lake: {args[0]}
 * Artifact Registry for Flow Images: {args[1]}-docker.pkg.dev/{args[2]}/{args[3]}
@@ -204,6 +178,9 @@ Build and Push your Flow Image with:
 """
 
 
+pulumi.export("gcs_bucket_url", bucket.url)
+pulumi.export("bq_dataset_name", bq_dataset.dataset_id)
+pulumi.export("pipeline_sa_email", pipeline_sa.email)
 pulumi.export(
     "Next_Steps",
     pulumi.Output.all(  # type: ignore
