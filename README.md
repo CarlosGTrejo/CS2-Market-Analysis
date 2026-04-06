@@ -14,15 +14,19 @@ This project uses the modern data stack:
   - Uses Google Cloud Run Push for serverless execution of flows (scales to zero, pay per second)
   - Uses image-based deployments with a custom Docker image containing all necessary dependencies (dlt, dbt, flow code)
   - Handles image building and pushing to Artifact Registry as part of the deployment process
-* **Data Extraction (EL)** | [dlt](https://dlthub.com/)
+* **Data Extraction/Loading (EL)** | [dlt](https://dlthub.com/)
   - Extracts data from Steam's REST APIs for CS2 market items and price history using proxy rotation and pagination
-  - Normalizes and loads raw data into GCS as Parquet files (data lake)
+  - Normalizes and loads raw data into GCS (data lake) as Parquet files for staging
+  - Loads data from GCS to BigQuery (data warehouse)
+* **Data Transformation (T)** | [dbt](https://www.getdbt.com/)
+  - Transforms raw data in BigQuery into cleaned and modeled tables for analysis
+  - Implements data quality tests and documentation for transformed models
 * **Proxy Provider** | [Webshare.io](https://www.webshare.io/?referral_code=1omcktoaxbhl)
   - Rotating proxies to avoid rate limits when extracting data from Steam's APIs
 * **Data Lake** | Google Cloud Storage Bucket
 * **Data Warehouse** | Google BigQuery
 * **Data Transformation (T)** | [dbt](https://www.getdbt.com/)
-* **BI Dashboard** | [Looker Studio](https://lookerstudio.google.com/)
+* **BI Dashboard** | TBD (considering Evidence or Rill Data)
 
 ## Project Structure
 
@@ -142,7 +146,10 @@ uv run --env-file .env flows/deploy.py
 
 ---
 
-## Tasks
+
+<details>
+<summary></summary>
+<!-- Task Log -->
 
 - [x] Initialize **Python** project with `uv init`
 - [x] Add **Python dependencies** for:
@@ -210,3 +217,5 @@ for data_point in price_history:
 if current_batch:
     yield current_batch
 ```
+
+</details>
