@@ -17,9 +17,8 @@ This project uses the modern data stack:
 * **Data Extraction (EL)** | [dlt](https://dlthub.com/)
   - Extracts data from Steam's REST APIs for CS2 market items and price history using proxy rotation and pagination
   - Normalizes and loads raw data into GCS as Parquet files (data lake)
-* **Proxy Provider**: Rotating proxies to avoid rate limits when extracting data from Steam's APIs
-  - [Scrape.do](https://scrape.do?fpr=k1frxj) or...
-  - [Webshare.io](https://www.webshare.io/?referral_code=1omcktoaxbhl)
+* **Proxy Provider** | [Webshare.io](https://www.webshare.io/?referral_code=1omcktoaxbhl)
+  - Rotating proxies to avoid rate limits when extracting data from Steam's APIs
 * **Data Lake** | Google Cloud Storage Bucket
 * **Data Warehouse** | Google BigQuery
 * **Data Transformation (T)** | [dbt](https://www.getdbt.com/)
@@ -30,37 +29,36 @@ This project uses the modern data stack:
 <!-- TODO: Verify project structure reflects most recent changes -->
 ```
 CS2-Market-Analysis/
-├── .python-version             # Specifies the Python version for uv
-├── .env.example                # Example environment variables
-├── pyproject.toml              # Manages Python dependencies (uv)
-├── uv.lock                     # Locked dependencies for reproducible environments
+├── .python-version               # Specifies the Python version for uv
+├── .env.example                  # Example environment variables
+├── pyproject.toml                # Python dependencies (uv)
+├── uv.lock                       # Locked dependencies for reproducible environments
 ├── .gitignore
-├── .prefectignore              # Prevents unnecessary files from being uploaded during Prefect deployments
+├── .prefectignore                # Prevents unnecessary files from being uploaded during Prefect deployments
 │
-├── infra/                      # Pulumi Infrastructure as Code (Python)
-│   ├── __main__.py             # Main Pulumi script defining GCP resources (GCS, BigQuery, Artifact Registry) and Service Accounts
-│   ├── Pulumi.yaml             # Pulumi project configuration
-│   └── Pulumi.prod.yaml        # Environment-specific configuration (e.g., prod, dev)
+├── infra/                        # Pulumi Infrastructure as Code (Python)
+│   ├── __main__.py               # Main Pulumi script defining GCP resources (GCS, BigQuery, Artifact Registry) and Service Accounts
+│   ├── Pulumi.yaml               # Pulumi project configuration
+│   └── Pulumi.prod.yaml          # Prod-specific configuration (blank for now)
 │
-├── pipelines/                  # Data Pipelines (Extract, Load, Transform)
-│   ├── extract-load/           # dlt pipelines (Extract & Load)
-│   │   ├── items.py            # pipeline for extracting and loading CS2 market items data
-│   │   └── sales_history.py    # pipeline for extracting and loading item's median sales price history
-│   │
-│   └── transform/              # dbt project (Transform)
-│       ├── dbt_project.yml     # Main dbt configuration
-│       ├── models/             # dbt SQL transformation models for BigQuery
-│       ├── macros/             # Reusable dbt SQL macros
-│       └── tests/              # Data quality tests
+├── pipelines/                    # Data Pipelines (Extract, Load, Transform)
+│   ├── extract_load/             # dlt pipeline (Extract & Load)
+│   │   └── ingest_market_data.py # extracts and loads market data (items and price history)
+│   │  
+│   └── transform/                # dbt project (Transform)
+│       ├── dbt_project.yml       # dbt configuration
+│       ├── profiles.yml          # TODO: describe
+│       ├── models/               # dbt SQL transformation models for BigQuery
+│       └── tests/                # Data quality tests
 │
-├── flows/                      # Prefect Orchestration & Deployments
-│   ├── main_flow.py            # Prefect flows that orchestrate dlt and dbt
-│   └── deploy.py               # Python-based Prefect deployment script (builds Docker image & deploys)
+├── flows/                        # Prefect Orchestration & Deployments
+│   ├── main_flow.py              # Prefect flows that orchestrate dlt and dbt
+│   └── deploy.py                 # Python-based Prefect deployment script (builds Docker image & deploys)
 │
-├── dashboards/                 # BI & Visualization
-│   └── README.md               # Looker Studio dashboard links, configuration details, or embedded templates
+├── dashboards/                   # BI & Visualization
+│   └── README.md                 # TODO: shift to Evidence or Rill Data
 │
-└── Dockerfile                  # Defines the image for Prefect workers containing dlt, dbt, and flow code
+└── Dockerfile                    # Defines the image for Prefect workers containing dlt, dbt, and flow code
 ```
 
 ## Quick Start (Frictionless Deployment)
@@ -70,9 +68,10 @@ CS2-Market-Analysis/
 - Accounts:
   - Google Cloud Project with Billing Enabled (free credits available).
     - Authentication configured (`gcloud auth application-default login`).
-  - Prefect Cloud account (Free tier is sufficient)
-  - Pulumi Cloud account (Free tier is sufficient)
-  - Your own proxy provider account (rate limits will be an issue)
+    - Enable [Artifact Registry API](https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com).
+  - [Prefect Cloud](https://app.prefect.cloud/auth/sign-up) account (Free tier is sufficient)
+  - [Pulumi Cloud](https://app.pulumi.com/signup) account (Free tier is sufficient)
+  - [Webshare.io](https://www.webshare.io/?referral_code=1omcktoaxbhl) to avoid IP blocking and rate limits ($9/month for 3GB bandwidth is enough for 2 days of data extraction)
 - Tools:
   - git (for cloning the repo)
   - Google Cloud CLI (`gcloud`) for authentication
@@ -91,21 +90,24 @@ cd CS2-Market-Analysis
 gcloud auth login
 gcloud auth application-default login
 
-# 3. Authenticate with Pulumi
-pulumi login
-
-# 4. Fill in the specific API keys
+# 3. Fill in the specific API keys
 cp .env.example .env
 nano .env
 
-# 5. Install python dependencies
+# 4. Install python dependencies
 uv sync --locked
 
-# 6. Stand up the GCP infrastructure (GCS, BigQuery, Artifact Registry)
+# 5. Authenticate with Pulumi
+pulumi login
+
+# 6. Authenticate with Prefect Cloud (follow interactive prompts)
+uv run prefect cloud login
+
+# 7. Stand up the GCP infrastructure (GCS, BigQuery, Artifact Registry)
 # (Pulumi will automatically use the gcloud credentials from step 2)
 uv run --env-file .env pulumi up -C infra/
 
-# 7. Build the Docker image (locally) and deploy the flow to Prefect Cloud
+# 8. Build the Docker image (locally) and deploy the flow to Prefect Cloud
 # (Prefect will use the local Docker daemon to build, and gcloud creds to push)
 uv run --env-file .env flows/deploy.py
 ```
@@ -145,7 +147,11 @@ uv run --env-file .env flows/deploy.py
 - [x] Initialize **Python** project with `uv init`
 - [x] Add **Python dependencies** for:
   - [x] development: `uv add --dev prefect pulumi pulumi-gcp`
-  - [x] extract-load pipeline: `uv add "dlt[filesystem,gs,parquet]"`
+  - [x] extract_load pipeline:
+    - `uv add "dlt[filesystem,gs,parquet]"`
+    - `uv add --group inspection marimo "dlt[workspace]"`
+  - [x] transform pipeline:
+    - `uv add "prefect[dbt]" dbt-bigquery`
 - [x] Create pipelines
   - [x] dlt pipeline for cs2 market items (extract & load to GCS/BigQuery)
   - [x] dlt pipeline for cs2 market item price history (extract & load to GCS/BigQuery)
@@ -162,23 +168,45 @@ uv run --env-file .env flows/deploy.py
   - [/] Create **Dockerfile** for Prefect workers that includes dlt, dbt, and flow code
   - [ ] Write Prefect deployment script to build Docker image and deploy flow to Prefect Cloud
 - [x] Initialize **Pulumi** project with `pulumi new gcp-python`
-- [/] Write Pulumi code to **provision infrastructure**:
-  - [ ] GCS bucket for data lake
-  - [ ] BigQuery dataset for data warehouse
+- [x] Write Pulumi code to **provision infrastructure**:
+  - [x] GCS bucket for data lake
+  - [x] BigQuery dataset for data warehouse
   - [x] BigQuery external tables pointing to raw data in GCS Bucket
-  - [ ] Service accounts with least privilege for dlt and dbt
+  - [x] Service accounts with least privilege for dlt and dbt
     - dbt service account permissions:
       - BigQuery Data Editor
       - BigQuery Job User
       - BigQuery User
     - dlt service account permissions:
-      - what is needed to write to GCS bucket?
-  - [ ] Google Artifact Registry for container images (for Cloud Run Push)
-  - [ ] Looker Studio BI dashboard (if possible via IaC, otherwise document manual steps)
+      - storage.objectAdmin (for writing to GCS)
+  - [x] Google Artifact Registry for container images (for Cloud Run Push)
 - Investigate if we should enable metadata caching for performance:
   - [Metadata caching for Performance BigQuery](https://docs.cloud.google.com/bigquery/docs/biglake-intro?authuser=1&hl=en#metadata_caching_for_performance)
 - [ ] Explore using **mise** to install all tools needed for the project.
 - [ ] README:
+  - [ ] Mention data volume and how it impacts our decisions
+    - 31,000+ items, each with 4,000+ historical price points, results in 124 million+ records
+    - 3,100 requests just to get the item list, and 31,000+ requests to get price history (rate limits are a concern). Daily requests: 34,000+ just to keep data up to date.
+    - ~440KB per page for item list and items' history = 1.364GB of requested data per day.
   - [ ] Explain choices and decision of our stack and deployment stragegy in the README.
     - e.g. why we are using Google Cloud Run Push? Cloud run push scales to zero, only pay for exact seconds flow is running
+    - even though dlt can create the datasets automatically, we are creating them with Pulumi to have better control and visibility over permissions and configurations.
   - [ ] Explain our problem statement in the README
+  - [ ] Do we need to specify if the user needs to select a specific Pulumi stack, or will Pulumi us prod by default??
+- [ ] Investigate if our dlt pipeline properly handles retrying and resuming from failures. Do we need a dlt Runner?
+- [ ] Should we add code somewhere that checks if the necessary environment variables are set? If so, how early in the process should we add the checks?
+- [ ] make sure that the bucket_url env variable is available to dlt (DESTINATION__FILESYSTEM__BUCKET_URL="gs://your-staging-bucket")
+
+
+```py
+# consider batch yielding if throughput is low.
+BATCH_SIZE = 1000
+current_batch = []
+for data_point in price_history:
+    current_batch.append({ ... })
+    if len(current_batch) >= BATCH_SIZE:
+        yield current_batch
+        current_batch = []
+if current_batch:
+    yield current_batch
+```
