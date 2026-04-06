@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from datetime import datetime, timezone
 from typing import Annotated, Iterator, TypedDict
@@ -10,7 +11,7 @@ from dlt.sources.helpers import requests
 from dlt.sources.rest_api import rest_api_source
 from dlthub._runner.prefect_collector import PrefectCollector
 
-STACK: str = dlt.secrets.get("PULUMI_STACK") or "dev"
+STACK: str = os.getenv("PULUMI_STACK", "dev")
 BASE_URL = "https://steamcommunity.com/market/"
 
 # Compiled regex to extract price history JS variable from the HTML response
@@ -20,25 +21,23 @@ PRICE_HISTORY_REGEX = re.compile(r"var line1=([^;]+);")
 proxy_enabled_session = requests.Client(
     request_timeout=(5.0, 15.0),  # (connect_timeout, read_timeout)
     request_max_attempts=3,
+    raise_for_status=False,  # Let dlt handle HTTP errors gracefully
 ).session
 
-# set to false to let dlt handle http errors gracefully
-proxy_enabled_session.raise_for_status = False
-
 # Configure proxies on the session
-token = dlt.secrets.get("PROXY_TOKEN")
-proxy_url = (
-    # Use scrape.do proxy if user provided their token...
-    f"http://{token}:@proxy.scrape.do:8080"
-    if token
-    # otherwise we use the proxy URL provided by the user in the PROXY_URL secret
-    else dlt.secrets.get("PROXY_URL")
-)
+proxy_url = dlt.secrets.get("PROXY_URL")
 
 proxy_enabled_session.proxies = {
     "http": f"http://{proxy_url}",
     "https": f"http://{proxy_url}",
 }
+
+proxy_enabled_session.headers.update(
+    {
+        "Referer": "https://steamcommunity.com/market/search?appid=730",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+)
 
 # Global snapshot date to ensure consistency across all records in a single run.
 # This avoids multiple calls to datetime.now() and ensures all item metadata
@@ -197,16 +196,21 @@ def run_ingest():
     global GLOBAL_SNAPSHOT_DATE
     GLOBAL_SNAPSHOT_DATE = datetime.now(timezone.utc)
 
+    if STACK != "prod":
+        # Limit non-prod runs to 1 page (10 items) for testing and to avoid unnecessary API calls during development
+        items_data_source.resources["items_raw"].add_limit(1)
+        # Set progress to logging for non-prod to view detailed progress without throwing errors for PrefectCollector.
+        PROGRESS = dlt.progress.log(dump_system_stats=False)
+    else:
+        PROGRESS = PrefectCollector()
+
     pipeline = dlt.pipeline(
         pipeline_name="ingest_cs2_items",
         destination="bigquery",
         staging="filesystem",
-        dataset_name=f"cs2_market_dwh_{STACK}",
-        progress=PrefectCollector(),
+        dataset_name=os.getenv("BQ_DATASET_NAME", f"cs2_market_dwh_{STACK}"),
+        progress=PROGRESS,
     )
-
-    # TODO: remove after finished with development
-    items_data_source.resources["items_raw"].add_limit(1)
 
     # Apply BigQuery-specific hints to transformer output
     item_price_history_configured = bigquery_adapter(
@@ -229,4 +233,4 @@ def run_ingest():
 
 
 if __name__ == "__main__":
-    print(run_ingest())
+    run_ingest()
