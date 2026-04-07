@@ -150,6 +150,15 @@ uv run --env-file .env flows/deploy.py
 <details>
 <summary></summary>
 <!-- Task Log -->
+<!-- Checkbox Legend
+- [/] In progress
+- [-] Cancelled
+- [>] Deferred
+- [?] Question
+- [!] Important
+- [*] Star/highlight
+-->
+
 
 - [x] Initialize **Python** project with `uv init`
 - [x] Add **Python dependencies** for:
@@ -169,11 +178,11 @@ uv run --env-file .env flows/deploy.py
 - [x] Initialize **dbt** project
   - [x] Add BigQuery adapter
 - [x] Initialize **Prefect** project with `prefect init`
-- [ ] Create prefect workflow
-  - [ ] Task to run dlt pipeline (extract & load)
-  - [ ] Task to run dbt transformations
+- [/] Create prefect workflow
+  - [/] Task to run dlt pipeline (extract & load)
+  - [/] Task to run dbt transformations
   - [/] Create **Dockerfile** for Prefect workers that includes dlt, dbt, and flow code
-  - [ ] Write Prefect deployment script to build Docker image and deploy flow to Prefect Cloud
+  - [/] Write Prefect deployment script to build Docker image and deploy flow to Prefect Cloud
 - [x] Initialize **Pulumi** project with `pulumi new gcp-python`
 - [x] Write Pulumi code to **provision infrastructure**:
   - [x] GCS bucket for data lake
@@ -187,8 +196,7 @@ uv run --env-file .env flows/deploy.py
     - dlt service account permissions:
       - storage.objectAdmin (for writing to GCS)
   - [x] Google Artifact Registry for container images (for Cloud Run Push)
-- Investigate if we should enable metadata caching for performance:
-  - [Metadata caching for Performance BigQuery](https://docs.cloud.google.com/bigquery/docs/biglake-intro?authuser=1&hl=en#metadata_caching_for_performance)
+- [/] Verify Pulumi provisioning works and infrastructure is set up correctly
 - [ ] Explore using **mise** to install all tools needed for the project.
 - [ ] README:
   - [ ] Mention data volume and how it impacts our decisions
@@ -199,10 +207,10 @@ uv run --env-file .env flows/deploy.py
     - e.g. why we are using Google Cloud Run Push? Cloud run push scales to zero, only pay for exact seconds flow is running
     - even though dlt can create the datasets automatically, we are creating them with Pulumi to have better control and visibility over permissions and configurations.
   - [ ] Explain our problem statement in the README
-  - [ ] Do we need to specify if the user needs to select a specific Pulumi stack, or will Pulumi us prod by default??
-- [ ] Investigate if our dlt pipeline properly handles retrying and resuming from failures. Do we need a dlt Runner?
-- [ ] Should we add code somewhere that checks if the necessary environment variables are set? If so, how early in the process should we add the checks?
-- [ ] make sure that the bucket_url env variable is available to dlt (DESTINATION__FILESYSTEM__BUCKET_URL="gs://your-staging-bucket")
+- [-] Investigate if our dlt pipeline properly handles retrying and resuming from failures. Do we need a dlt Runner?
+  - dlt Runners require a license, the pipeline already handles retries by default. We just have to persist the pipeline dir.
+- [?] Should we add code somewhere that checks if the necessary environment variables are set? If so, how early in the process should we add the checks?
+- [*] make sure that the bucket_url env variable is available to dlt (DESTINATION__FILESYSTEM__BUCKET_URL="gs://your-staging-bucket")
 
 
 ```py

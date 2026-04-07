@@ -26,6 +26,8 @@ proxy_enabled_session = requests.Client(
 
 # Configure proxies on the session
 proxy_url = dlt.secrets.get("PROXY_URL")
+if not proxy_url:
+    raise ValueError("PROXY_URL is not set, please specify a proxy URL.")
 
 proxy_enabled_session.proxies = {
     "http": f"http://{proxy_url}",

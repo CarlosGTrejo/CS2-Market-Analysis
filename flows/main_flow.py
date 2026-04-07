@@ -1,79 +1,64 @@
-# Sample Prefect flow, SUBJECT TO CHANGE as we build out the pipelines and understand the dependencies better.
-
 import os
+from pathlib import Path
 
-from dbt.cli.main import dbtRunner, dbtRunnerResult
-
-# Import your dlt pipeline logic from the pipelines/extract directory
-from pipelines.extract.pipeline import run_rest_api_to_gcs
 from prefect import flow, task
-from prefect.artifacts import create_markdown_artifact
+from prefect_dbt import PrefectDbtRunner, PrefectDbtSettings
+
+from pipelines.extract_load.ingest_market_data import run_ingest
 
 
-@task(retries=2, retry_delay_seconds=60)
-def extract_and_load_data():
-    """
-    Executes the dlt pipeline to pull from the REST API and load to GCS.
-    """
-    print("Starting dlt extraction...")
-
-    # We call the function defined in pipelines/extract/pipeline.py
-    load_info = run_rest_api_to_gcs()
-
-    # Log the dlt load information to Prefect
-    print(f"Extraction complete. dlt load info: {load_info}")
+@task(log_prints=True, retries=3, retry_delay_seconds=60)
+def run_dlt_pipeline():
+    """Extract and load market data using dlt."""
+    print("Starting dlt ingest pipeline...")
+    load_info = run_ingest()
+    print(f"dlt pipeline completed: {load_info}")
     return load_info
 
 
-@task
+@task(log_prints=True)
 def run_dbt_transformations():
-    """
-    Executes the dbt project programmatically to transform data in BigQuery.
-    """
+    """Run dbt transformations using PrefectDbtRunner."""
     print("Starting dbt transformations...")
 
-    # Define the path to your dbt project
-    dbt_project_dir = os.path.join(os.getcwd(), "pipelines", "transform")
+    # Path to the dbt project folder
+    default_dir = Path(__file__).parent.parent / "pipelines" / "transform"
+    project_dir = Path(os.getenv("DBT_PROJECT_DIR", str(default_dir)))
+    profiles_dir = Path(os.getenv("DBT_PROFILES_DIR", str(default_dir)))
 
-    # Run dbt programmatically (dbt build runs models, tests, and snapshots)
-    dbt = dbtRunner()
-    cli_args = [
-        "build",
-        "--project-dir",
-        dbt_project_dir,
-        "--profiles-dir",
-        dbt_project_dir,
-    ]
+    print(f"dbt project directory evaluated to: {project_dir}")
+    print(f"dbt profiles directory evaluated to: {profiles_dir}")
 
-    res: dbtRunnerResult = dbt.invoke(cli_args)
+    # Configure dbt settings to point to our project directory
+    settings = PrefectDbtSettings(
+        project_dir=project_dir,
+        profiles_dir=profiles_dir,
+    )
 
-    if not res.success:
-        raise Exception(f"dbt transformations failed: {res.exception}")
+    runner = PrefectDbtRunner(settings=settings)
+
+    # Invoke dbt build (runs tests, seeds, models, snapshots)
+    result = runner.invoke(["build"])
+    if not result.success:
+        raise RuntimeError(f"dbt build failed: {result}")
 
     print("dbt transformations completed successfully.")
-    return True
+    return result
 
 
-@flow(name="Daily ELT Pipeline", log_prints=True)
-def main_elt_flow():
-    """
-    The main orchestrator. It ensures extraction happens before transformation.
-    """
-    # Step 1: Extract from REST API and Load to GCS (dlt)
-    load_status = extract_and_load_data()
+@flow(name="elt_market_data_flow", log_prints=True)
+def elt_market_data_flow():
+    """Orchestrates the ELT process: dlt extract/load -> dbt transform."""
 
-    # Step 2: Transform data in BigQuery (dbt)
-    # The `wait_for` argument ensures dbt doesn't run until dlt finishes successfully
-    run_dbt_transformations(wait_for=[load_status])
+    # 1. Run dlt extract and load
+    dlt_result = run_dlt_pipeline()
 
-    # Optional: Create a markdown artifact in the Prefect UI summarizing the run
-    create_markdown_artifact(
-        key="pipeline-summary",
-        markdown=f"## ELT Run Complete 🎉\n- dlt pipeline status: OK\n- dbt models updated successfully.",
-        description="Daily Pipeline Summary",
-    )
+    if getattr(dlt_result, "has_failed_jobs", False):
+        raise RuntimeError(f"dlt pipeline failed to load some jobs: {dlt_result}")
+
+    # 2. Run dbt transformations strictly after the extract/load
+    run_dbt_transformations(wait_for=[dlt_result])
 
 
 if __name__ == "__main__":
-    # You can test the entire flow locally by just running this script
-    main_elt_flow()
+    elt_market_data_flow()
