@@ -182,6 +182,15 @@ pulumi.export("gcs_bucket_url", bucket.url)
 pulumi.export("bq_dataset_name", bq_dataset.dataset_id)
 pulumi.export("pipeline_sa_email", pipeline_sa.email)
 pulumi.export(
+    "artifact_registry_url",
+    pulumi.Output.format(
+        "{location}-docker.pkg.dev/{project}/{repository_id}",
+        location=artifact_repo.location,
+        project=artifact_repo.project,
+        repository_id=artifact_repo.repository_id,
+    ),
+)
+pulumi.export(
     "Next_Steps",
     pulumi.Output.all(  # type: ignore
         bucket.url,

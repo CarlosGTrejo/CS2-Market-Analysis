@@ -24,25 +24,36 @@ def get_pulumi_outputs(stack: str) -> dict[str, str]:
 
 
 if __name__ == "__main__":
-    # Pull the Artifact Registry path from your .env file to keep it reproducible
-    # Example format: us-central1-docker.pkg.dev/your-project-id/cs2-repo/cs2-image
-    image_url = os.getenv("ARTIFACT_REGISTRY_IMAGE_URL")
     stack = os.getenv("PULUMI_STACK", "dev")
+    
+    # Dynamically resolve dataset, bucket URL, and artifact registry to avoid hardcoded naming drift
+    pulumi_outputs = get_pulumi_outputs(stack)
+    bucket_url = pulumi_outputs.get("gcs_bucket_url")
+    bq_dataset_name = pulumi_outputs.get("bq_dataset_name")
+    registry_url = pulumi_outputs.get("artifact_registry_url")
+
+    # Combine the registry base URL with a predefined image name to get the full image path
+    if registry_url:
+        image_url = f"{registry_url}/cs2-market-analysis"
+    else:
+        # Fallback if the user hasn't run pulumi up recently
+        image_url = os.getenv("ARTIFACT_REGISTRY_IMAGE_URL")
+
+    # Use a configured tag or default to a git hash / timestamp if omitted
+    image_tag = os.getenv("IMAGE_TAG", "rev-1")
+
     gcp_project = os.getenv("GOOGLE_CLOUD_PROJECT")
     gcp_region = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
     proxy_url = os.getenv("PROXY_URL")
 
     if not image_url:
-        raise ValueError("ARTIFACT_REGISTRY_IMAGE_URL is missing from your .env file.")
+        raise ValueError(
+            "Artifact registry URL is missing from Pulumi state, and ARTIFACT_REGISTRY_IMAGE_URL is missing from your .env file."
+        )
     if not gcp_project:
         raise ValueError("GOOGLE_CLOUD_PROJECT is missing from your .env file.")
     if not proxy_url:
         raise ValueError("PROXY_URL is missing from your .env file.")
-
-    # Dynamically resolve dataset and bucket URL to avoid hardcoded naming drift
-    pulumi_outputs = get_pulumi_outputs(stack)
-    bucket_url = pulumi_outputs.get("gcs_bucket_url")
-    bq_dataset_name = pulumi_outputs.get("bq_dataset_name")
 
     if not bucket_url or not bq_dataset_name:
         raise ValueError(
@@ -60,7 +71,7 @@ if __name__ == "__main__":
     elt_market_data_flow.deploy(
         name=f"cs2-cloud-run-deployment-{stack}",
         work_pool_name=work_pool_name,
-        image=DockerImage(name=image_url, tag="latest", dockerfile="Dockerfile"),
+        image=DockerImage(name=image_url, tag=image_tag, dockerfile="Dockerfile"),
         build=True,
         push=True,
         cron="0 0 * * *",
