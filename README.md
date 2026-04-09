@@ -26,7 +26,7 @@ This project uses the modern data stack:
 * **Data Lake** | Google Cloud Storage Bucket
 * **Data Warehouse** | Google BigQuery
 * **Data Transformation (T)** | [dbt](https://www.getdbt.com/)
-* **BI Dashboard** | TBD (considering Evidence or Rill Data)
+* **BI Dashboard** | Rill Data
 
 ## Project Structure
 
