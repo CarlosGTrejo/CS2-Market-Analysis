@@ -1,0 +1,15 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+logs/
+infra/
+transform/dbt_packages/
+transform/logs/
+transform/target/
+transform/user.yml
+.python-version
+README.md
+LICENSE
+.github
