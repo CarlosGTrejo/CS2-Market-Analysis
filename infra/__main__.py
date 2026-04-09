@@ -103,54 +103,10 @@ gcp_credentials_block = prefect.Block(
 
 
 # 8. Create Cloud Run Push Work Pool
-def create_job_template(args: list[str]) -> str:
-    block_name, sa_email = args[0], args[1]
-    return json.dumps(
-        {
-            "variables": {
-                "type": "object",
-                "properties": {
-                    "image": {
-                        "type": "string",
-                        "title": "Image",
-                        "description": "The container image for the flow run.",
-                    },
-                    "region": {
-                        "type": "string",
-                        "title": "Region",
-                        "default": region,
-                        "description": "The region to run Cloud Run jobs.",
-                    },
-                    "credentials": {
-                        "type": "string",
-                        "title": "GCP Credentials",
-                        "default": f"{{{{ prefect.blocks.gcp-credentials.{block_name} }}}}",
-                    },
-                    "service_account": {
-                        "type": "string",
-                        "title": "Service Account Email",
-                        "default": sa_email,
-                        "description": "GCP service account email for Cloud Run execution.",
-                    },
-                },
-            },
-            "job_configuration": {
-                "image": "{{ image }}",
-                "region": "{{ region }}",
-                "credentials": "{{ credentials }}",
-                "service_account": "{{ service_account }}",
-            },
-        }
-    )
-
-
 cloud_run_push_pool = prefect.WorkPool(
     "cloud-run-push-pool",
     name=f"cs2-push-pool-{stack}",
     type="cloud-run:push",
-    base_job_template=pulumi.Output.all(  # type: ignore
-        gcp_credentials_block.name, pipeline_sa.email
-    ).apply(create_job_template),  # type: ignore
 )
 
 

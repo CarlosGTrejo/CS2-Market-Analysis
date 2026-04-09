@@ -7,7 +7,12 @@ from prefect_dbt import PrefectDbtRunner, PrefectDbtSettings
 from pipelines.extract_load.ingest_market_data import run_ingest
 
 
-@task(log_prints=True, retries=3, retry_delay_seconds=60)
+@task(
+    log_prints=True,
+    retries=int(os.getenv("PREFECT_TASK_RETRIES", "3")),
+    retry_delay_seconds=int(os.getenv("PREFECT_TASK_RETRY_DELAY", "60")),
+    timeout_seconds=int(os.getenv("PREFECT_TASK_TIMEOUT", "7200")),  # Default 2 hours
+)
 def run_dlt_pipeline():
     """Extract and load market data using dlt."""
     print("Starting dlt ingest pipeline...")
@@ -40,7 +45,8 @@ def run_dbt_transformations():
     # Invoke dbt build (runs tests, seeds, models, snapshots)
     result = runner.invoke(["build"])
     if not result.success:
-        raise RuntimeError(f"dbt build failed: {result}")
+        error_details = getattr(result, "exception", getattr(result, "stdout", str(result)))
+        raise RuntimeError(f"dbt build failed with error:\n{error_details}")
 
     print("dbt transformations completed successfully.")
     return result
@@ -54,7 +60,8 @@ def elt_market_data_flow():
     dlt_result = run_dlt_pipeline()
 
     if getattr(dlt_result, "has_failed_jobs", False):
-        raise RuntimeError(f"dlt pipeline failed to load some jobs: {dlt_result}")
+        failed_jobs = getattr(dlt_result, "failed_jobs", "Unknown error")
+        raise RuntimeError(f"dlt pipeline failed to load some jobs:\n{failed_jobs}")
 
     # 2. Run dbt transformations strictly after the extract/load
     run_dbt_transformations(wait_for=[dlt_result])

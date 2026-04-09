@@ -25,12 +25,13 @@ def get_pulumi_outputs(stack: str) -> dict[str, str]:
 
 if __name__ == "__main__":
     stack = os.getenv("PULUMI_STACK", "dev")
-    
+
     # Dynamically resolve dataset, bucket URL, and artifact registry to avoid hardcoded naming drift
     pulumi_outputs = get_pulumi_outputs(stack)
     bucket_url = pulumi_outputs.get("gcs_bucket_url")
     bq_dataset_name = pulumi_outputs.get("bq_dataset_name")
     registry_url = pulumi_outputs.get("artifact_registry_url")
+    pipeline_sa_email = pulumi_outputs.get("pipeline_sa_email")
 
     # Combine the registry base URL with a predefined image name to get the full image path
     if registry_url:
@@ -76,6 +77,9 @@ if __name__ == "__main__":
         push=True,
         cron="0 0 * * *",
         job_variables={
+            "credentials": f"{{{{ prefect.blocks.gcp-credentials.cs2-gcp-creds-{stack} }}}}",
+            "service_account_name": pipeline_sa_email,
+            "region": gcp_region,
             "env": {
                 "PULUMI_STACK": stack,
                 "GOOGLE_CLOUD_PROJECT": gcp_project,
@@ -84,6 +88,6 @@ if __name__ == "__main__":
                 "DESTINATION__BIGQUERY__LOCATION": gcp_region,
                 "BQ_DATASET_NAME": bq_dataset_name,
                 "PROXY_URL": proxy_url,
-            }
+            },
         },
     )

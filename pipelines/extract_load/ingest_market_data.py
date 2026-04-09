@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Annotated, Iterator, TypedDict
 from urllib.parse import quote
@@ -20,8 +21,8 @@ PRICE_HISTORY_REGEX = re.compile(r"var line1=([^;]+);")
 # Create a custom session with proxy settings
 proxy_enabled_session = requests.Client(
     request_timeout=(5.0, 15.0),  # (connect_timeout, read_timeout)
-    request_max_attempts=3,
-    raise_for_status=False,  # Let dlt handle HTTP errors gracefully
+    request_max_attempts=7,  # Increased to allow for resilient backoff on 429s (max 7 attempts)
+    raise_for_status=False,  # Let dlt handle HTTP errors gracefully after max attempts
 ).session
 
 # Configure proxies on the session
@@ -43,8 +44,8 @@ proxy_enabled_session.headers.update(
 
 # Global snapshot date to ensure consistency across all records in a single run.
 # This avoids multiple calls to datetime.now() and ensures all item metadata
-# belongs to the same logical batch.
-GLOBAL_SNAPSHOT_DATE = None
+# belongs to the same logical batch. ContextVar makes it safe for concurrent runs.
+GLOBAL_SNAPSHOT_DATE: ContextVar[datetime] = ContextVar("snapshot_date")
 
 # Using two separate resources (items and item_price_history) is the best approach.
 # It avoids emitting redundant item data for each price/volume datapoint,
@@ -88,8 +89,8 @@ items_data_source = rest_api_source(
 
 
 def add_snapshot_date(item):
-    # Use the global batch timestamp
-    item["snapshot_date"] = GLOBAL_SNAPSHOT_DATE
+    # Use the global batch timestamp (thread-safe)
+    item["snapshot_date"] = GLOBAL_SNAPSHOT_DATE.get()
     return item
 
 
@@ -193,10 +194,9 @@ def extract_median_price_sale_history(item) -> Iterator[PriceRecord]:
 
 
 def run_ingest():
-    # Set the logical timestamp for the entire batch.
+    # Set the logical timestamp for the entire batch in the execution context.
     # We keep the full timestamp to allow for future intra-day run support.
-    global GLOBAL_SNAPSHOT_DATE
-    GLOBAL_SNAPSHOT_DATE = datetime.now(timezone.utc)
+    GLOBAL_SNAPSHOT_DATE.set(datetime.now(timezone.utc))
 
     if STACK != "prod":
         # Limit non-prod runs to 1 page (10 items) for testing and to avoid unnecessary API calls during development
