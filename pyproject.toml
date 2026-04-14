@@ -8,17 +8,19 @@ dependencies = [
     "dbt-bigquery>=1.11.1",
     "dlt[bigquery]>=1.24.0",
     "dlthub>=0.22.1",
-    "fakeredis<2.35.0",
     "google-cloud-bigquery-storage>=2.37.0",
     "prefect[dbt]>=3.6.24",
 ]
 
 [dependency-groups]
 dev = [
+    "google-cloud-run>=0.16.0",
     "prefect>=3.6.24",
     "pulumi>=3.228.0",
     "pulumi-gcp>=9.16.0",
     "pulumi-prefect",
+    "python-on-whales>=0.81.0",
+    "ruff>=0.15.10",
     "ty>=0.0.29",
 ]
 pipeline-inspection = ["dlt[workspace]>=1.24.0", "marimo>=0.21.1"]
