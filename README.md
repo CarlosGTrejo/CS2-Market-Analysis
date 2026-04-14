@@ -60,7 +60,7 @@ CS2-Market-Analysis/
 │   └── deploy.py                 # Python-based Prefect deployment script (builds Docker image & deploys)
 │
 ├── dashboards/                   # BI & Visualization
-│   └── README.md                 # TODO: shift to Evidence or Rill Data
+│   └── tbd
 │
 └── Dockerfile                    # Defines the image for Prefect workers containing dlt, dbt, and flow code
 ```
@@ -70,17 +70,21 @@ CS2-Market-Analysis/
 ### 1. Prerequisites
 
 - Accounts:
-  - Google Cloud Project with Billing Enabled (free credits available).
-    - Authentication configured (`gcloud auth application-default login`).
-    - Enable [Artifact Registry API](https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com).
+  - Google Cloud Project with Billing Enabled (free credits available)
+    - Authentication configured (`gcloud auth application-default login`)
+    - Enable [Artifact Registry API](https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com)
+    - Enable [Secret Manager API](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com)
+    - Enable [Cloud Run API](https://console.cloud.google.com/apis/library/run.googleapis.com)
+    - Enable [Cloud Scheduler API](https://console.cloud.google.com/apis/library/cloudscheduler.googleapis.com)
   - [Prefect Cloud](https://app.prefect.cloud/auth/sign-up) account (Free tier is sufficient)
   - [Pulumi Cloud](https://app.pulumi.com/signup) account (Free tier is sufficient)
   - [Webshare.io](https://www.webshare.io/?referral_code=1omcktoaxbhl) to avoid IP blocking and rate limits ($9/month for 3GB bandwidth is enough for 2 days of data extraction)
 - Tools:
-  - git (for cloning the repo)
-  - Google Cloud CLI (`gcloud`) for authentication
+  - [git](https://git-scm.com/install/) for cloning the repo
+  - [mise](https://mise.jdx.dev/) for installing the necessary tools (if using bash shell install with `curl https://mise.run/bash | sh`)
+    - Google Cloud CLI (`gcloud`) for authentication
+    - Pulumi CLI for provisioning infrastructure
   - [uv](https://docs.astral.sh/uv/getting-started/installation)
-  - [Pulumi CLI](https://www.pulumi.com/docs/get-started/download-install/)
   - [Docker](https://docs.docker.com/engine/install/)
 
 ### 2. Setup & Running the pipeline
@@ -90,8 +94,13 @@ CS2-Market-Analysis/
 git clone https://github.com/CarlosGTrejo/CS2-Market-Analysis.git
 cd CS2-Market-Analysis
 
+# 2. Use mise to install gcloud and pulumi
+mise i
+
 # 2. Authenticate local machine with Google Cloud
-gcloud auth login
+#    if you have already initialized gcloud and have muliple projects
+#    use `gcloud config set project PROJECT_ID` to switch to the correct project
+gcloud init
 gcloud auth application-default login
 
 # 3. Fill in the specific API keys
@@ -107,16 +116,25 @@ pulumi login
 # 6. Authenticate with Prefect Cloud (follow interactive prompts)
 uv run prefect cloud login
 
-# 7. Stand up the GCP infrastructure (GCS, BigQuery, Artifact Registry)
+# 7. Stand up the GCP infrastructure (GCS, BigQuery, Artifact Registry, Cloud Run Job, Cloud Scheduler)
 # (Pulumi will automatically use the gcloud credentials from step 2)
 uv run --env-file .env pulumi up -C infra/
 
-# 8. Build the Docker image (locally) and deploy the flow to Prefect Cloud
-# (Prefect will use the local Docker daemon to build, and gcloud creds to push)
-uv run --env-file .env flows/deploy.py
+# 8. Configure Docker auth for the Artifact Registry host created by infra
+AR_HOST="$(uv run pulumi stack output artifact_registry_url -C infra | cut -d/ -f1)"
+gcloud auth configure-docker "$AR_HOST"
+
+# 9. Build, push, and deploy the Docker image natively to Cloud Run
+# (Uses python-on-whales to build and push, then updates the Cloud Run Job)
+# Requires a reachable Docker daemon and a BuildKit-capable builder.
+DOCKER_BUILDKIT=1 uv run --env-file .env flows/deploy.py
 ```
 
 ---
+
+## Future Improvements
+
+- Use CI/CD (GitHub Actions) to automate deployments on code changes
 
 ## Documentation & Notes
 
