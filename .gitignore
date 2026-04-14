@@ -14,6 +14,12 @@ logs/
 
 .pulumi/
 
+### Pulumi+stacks Patch ###
+# Pulumi stacks configuration files
+# See https://www.pulumi.com/docs/intro/concepts/project/#stack-settings-file
+
+Pulumi.*.yaml
+
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
