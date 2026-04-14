@@ -135,6 +135,7 @@ DOCKER_BUILDKIT=1 uv run --env-file .env flows/deploy.py
 ## Future Improvements
 
 - Use CI/CD (GitHub Actions) to automate deployments on code changes
+- Improve image tag management for traceability and rollback
 
 ## Documentation & Notes
 
