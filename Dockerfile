@@ -54,5 +54,5 @@ COPY --from=builder /app/pipelines /app/pipelines
 # Pre-compile dbt dependencies to ensure a frictionless runtime
 RUN dbt deps --project-dir /app/pipelines/transform
 
-# NO ENTRYPOINT REQUIRED
-# Prefect's Cloud Run Push work pool will automatically supply the execution command.
+# Command to execute the main Prefect flow
+CMD ["python", "flows/main_flow.py"]

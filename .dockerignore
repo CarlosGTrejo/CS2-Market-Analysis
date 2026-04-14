@@ -4,7 +4,8 @@
 __pycache__
 *.pyc
 logs/
-infra/
+infra/*
+!infra/sdks/
 transform/dbt_packages/
 transform/logs/
 transform/target/
