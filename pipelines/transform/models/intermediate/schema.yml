@@ -34,9 +34,7 @@ models:
           - not_null
       - name: total_sales_volume
         description: Total quantity of the item sold during the day.
-      - name: avg_price_usd
-        description: Average sale price of the item in USD during the day.
-      - name: min_price_usd
-        description: Minimum sale price of the item in USD during the day.
-      - name: max_price_usd
-        description: Maximum sale price of the item in USD during the day.
+      - name: min_median_sale_price_usd
+        description: Minimum median sale price of the item in USD during the day.
+      - name: max_median_sale_price_usd
+        description: Maximum median sale price of the item in USD during the day.

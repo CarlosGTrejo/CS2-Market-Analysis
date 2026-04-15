@@ -11,7 +11,7 @@ renamed_and_casted as (
         cast(date as timestamp) as price_timestamp,
         
         -- Metrics
-        cast(price as numeric) as price_usd,
+        cast(price as numeric) as median_sale_price_usd,
         cast(volume as int64) as sales_volume,
         
         -- dlt pipeline metadata (optional, but good for lineage/auditing)

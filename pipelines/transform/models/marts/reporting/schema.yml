@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: market_kpis
+    description: "Global market key performance indicators aggregated daily. Used for top-level dashboard metrics."
+    columns:
+      - name: snapshot_date
+        description: "The date of the market snapshot."
+        tests:
+          - not_null
+          - unique
+      - name: total_market_volume
+        description: "The total sum of all active sell listings across the market for this date."
+      - name: avg_listing_premium
+        description: "Average percentage difference between listing price and actual sale price. Indicates the average markup sellers are asking above the final sale price."
+
+  - name: item_group_summary
+    description: "Aggregated volume and performance metrics for individual items over rolling time windows."
+    columns:
+      - name: date
+        description: "The date of the aggregation."
+      - name: item_name
+        description: "The exact name of the item."
+      - name: volume_7d
+        description: "Total sales volume for the item over the trailing 7-day period."
+      - name: volume_30d
+        description: "Total sales volume for the item over the trailing 30-day period."
+
+  - name: item_liquidity_kpis
+    description: "Liquidity indexes (average daily sales count) for specific items over rolling time windows, measuring trade frequency."
+    columns:
+      - name: date
+        description: "The date of the aggregation."
+      - name: item_name
+        description: "The exact name of the item."
+      - name: liquidity_index_7d
+        description: "Average daily sales count over the trailing 7-day period."
+      - name: liquidity_index_30d
+        description: "Average daily sales count over the trailing 30-day period."

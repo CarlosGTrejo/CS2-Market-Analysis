@@ -63,9 +63,7 @@ models:
           - not_null
       - name: sales_volume
         description: Total quantity of the item sold on this date.
-      - name: avg_price_usd
-        description: Average actual sale price in USD on this date.
-      - name: min_price_usd
-        description: Minimum actual sale price in USD on this date.
-      - name: max_price_usd
-        description: Maximum actual sale price in USD on this date.
+      - name: min_median_sale_price_usd
+        description: Minimum observed median sale price in USD on this date.
+      - name: max_median_sale_price_usd
+        description: Maximum observed median sale price in USD on this date.

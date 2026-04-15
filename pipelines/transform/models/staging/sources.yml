@@ -44,9 +44,9 @@ sources:
           - name: asset_description__commodity
             data_type: INTEGER
             description: "Boolean as integer indicating if the item is a commodity, which means it has no distinct attributes, like a sticker capsule."
-          - name: asset_description__market_bucket_group_name
+          - name: asset_description__market_bucket_group_name``
             data_type: STRING
-            description: "Name of the market bucket group, providing a human-readable label for the market_bucket_group_id."
+            description: "Name of the market bucket group, providing a human-readable label for the market_bucket_group_id. Doesn't group agents the same way it does for skins."
           - name: asset_description__market_bucket_group_id
             data_type: STRING
             description: "String identifier for the market bucket group, used to link to the dim_item_bucket_group dimension table."
@@ -68,7 +68,7 @@ sources:
             description: "Timestamp of the price record, indicating when the price and sales volume was recorded."
           - name: price
             data_type: DECIMAL
-            description: "Price of the item in USD at the given timestamp."
+            description: "Median sale price of the item in USD at the given timestamp."
           - name: volume
             data_type: INTEGER
             description: "Number of units sold at the given timestamp."
