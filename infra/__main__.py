@@ -2,7 +2,7 @@ import os
 
 import pulumi
 import pulumi_gcp as gcp
-from prefect.settings import PREFECT_API_URL, PREFECT_API_KEY
+from prefect.settings import PREFECT_API_KEY, PREFECT_API_URL
 
 region = os.getenv("GOOGLE_CLOUD_REGION")
 if not region:
@@ -80,32 +80,34 @@ prefect_api_url = PREFECT_API_URL.value()
 
 prefect_api_key = PREFECT_API_KEY.value()
 
-if prefect_api_key:
-    prefect_api_key_secret = gcp.secretmanager.Secret(
-        "prefect-api-key-secret",
-        secret_id=f"prefect-api-key-{stack}",
-        replication=gcp.secretmanager.SecretReplicationArgs(
-            auto=gcp.secretmanager.SecretReplicationAutoArgs()
-        ),
+if not prefect_api_key or not prefect_api_url:
+    raise ValueError(
+        "PREFECT_API_KEY and PREFECT_API_URL must be available. Run `uv run prefect cloud login` or set them in your .env file."
     )
 
-    prefect_api_key_secret_version = gcp.secretmanager.SecretVersion(
-        "prefect-api-key-secret-version",
-        secret=prefect_api_key_secret.id,
-        secret_data=prefect_api_key,
-    )
+prefect_api_key_secret = gcp.secretmanager.Secret(
+    "prefect-api-key-secret",
+    secret_id=f"prefect-api-key-{stack}",
+    replication=gcp.secretmanager.SecretReplicationArgs(
+        auto=gcp.secretmanager.SecretReplicationAutoArgs()
+    ),
+)
 
-    gcp.secretmanager.SecretIamMember(
-        "prefect-api-key-accessor",
-        secret_id=prefect_api_key_secret.id,
-        role="roles/secretmanager.secretAccessor",
-        member=pulumi.Output.format(
-            "serviceAccount:{SA_email}", SA_email=pipeline_sa.email
-        ),
-    )
-    secret_id = prefect_api_key_secret.secret_id
-else:
-    secret_id = None
+prefect_api_key_secret_version = gcp.secretmanager.SecretVersion(
+    "prefect-api-key-secret-version",
+    secret=prefect_api_key_secret.id,
+    secret_data=prefect_api_key,
+)
+
+gcp.secretmanager.SecretIamMember(
+    "prefect-api-key-accessor",
+    secret_id=prefect_api_key_secret.id,
+    role="roles/secretmanager.secretAccessor",
+    member=pulumi.Output.format(
+        "serviceAccount:{SA_email}", SA_email=pipeline_sa.email
+    ),
+)
+secret_id = prefect_api_key_secret.secret_id
 
 # 7. Cloud Run V2 Job
 placeholder_image = "us-docker.pkg.dev/cloudrun/container/job:latest"
