@@ -24,9 +24,25 @@ models:
     intermediate:
       +materialized: view
     marts:
-      +materialized: table
+      +materialized: incremental
+      +partition_by:
+        field: date
+        data_type: date
+        granularity: day
+      +cluster_by: ["item_name"]
+      fct_market_snapshot_daily:
+        +partition_by:
+          field: snapshot_date
+          data_type: date
+          granularity: day
+      dim_item:
+        +materialized: table
+        +partition_by: null
+        +cluster_by: null
       reporting:
         +materialized: table
+        +partition_by: null
+        +cluster_by: null
         +post-hook:
           - "{{ export_parquet() }}"
 

@@ -15,3 +15,4 @@ select
     ) as liquidity_index_30d
 
 from {{ ref('fct_volume_daily') }}
+qualify date = (select max(date) from {{ ref('fct_volume_daily') }})
