@@ -26,7 +26,7 @@ This project uses the modern data stack:
 * **Data Lake** | Google Cloud Storage Bucket
 * **Data Warehouse** | Google BigQuery
 * **Data Transformation (T)** | [dbt](https://www.getdbt.com/)
-* **BI Dashboard** | Rill Data
+* **BI Dashboard** | [Observable Framework](https://observablehq.com/framework/)
 
 ## Project Structure
 
@@ -136,6 +136,7 @@ DOCKER_BUILDKIT=1 uv run --env-file .env flows/deploy.py
 
 - Use CI/CD (GitHub Actions) to automate deployments on code changes
 - Improve image tag management for traceability and rollback
+- Leverage dbt cloud for improved observability
 
 ## Documentation & Notes
 
