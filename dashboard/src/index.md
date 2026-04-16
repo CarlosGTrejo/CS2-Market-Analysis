@@ -36,12 +36,12 @@ LIMIT 1
 SELECT
   item_name,
   CAST(sell_price_usd AS DOUBLE) AS sell_price_usd,
-  liquidity_index_7d_avg,
-  liquidity_index_30d_avg,
+  daily_sales_7d_avg,
+  daily_sales_30d_avg,
   sales_volume_7d_sum,
   sales_volume_30d_sum
 FROM item_kpis_snapshot
-ORDER BY liquidity_index_30d_avg DESC
+ORDER BY daily_sales_30d_avg DESC
 ```
 
 ```js
@@ -94,13 +94,13 @@ const itemsPlot = Plot.plot({
     // Plot the reactive itemsTable variable
     Plot.dot(selectedItems, {
       x: "sell_price_usd",
-      y: "liquidity_index_30d_avg",
+      y: "daily_sales_30d_avg",
       fill: "item_name", // <-- THE FIX: Map fill to a specific data column
       r: 6,
       // Enables interactive tooltips on hover
       tip: true,
       // Customizes the tooltip text to show the item name alongside the coordinates
-      title: (d) => `${d.item_name}\nPrice: $${d.sell_price_usd}\nSales: ${d.liquidity_index_30d_avg}`
+      title: (d) => `${d.item_name}\nPrice: $${d.sell_price_usd}\nSales: ${d.daily_sales_30d_avg}`
     })
   ]
 });
@@ -157,16 +157,16 @@ const itemsTable = view(Inputs.table(searchItems, {
     columns: [
       "item_name",
       "sell_price_usd",
-      "liquidity_index_7d_avg",
-      "liquidity_index_30d_avg",
+      "daily_sales_7d_avg",
+      "daily_sales_30d_avg",
       "sales_volume_7d_sum",
       "sales_volume_30d_sum"
     ],
     header: {
       item_name: "Item Name",
       sell_price_usd: "Sell Price (USD)",
-      liquidity_index_7d_avg: "Daily Sales (7d avg)",
-      liquidity_index_30d_avg: "Daily Sales (30d avg)",
+      daily_sales_7d_avg: "Daily Sales (7d avg)",
+      daily_sales_30d_avg: "Daily Sales (30d avg)",
       sales_volume_7d_sum: "Sales Volume (7d sum)",
       sales_volume_30d_sum: "Sales Volume (30d sum)"
     },

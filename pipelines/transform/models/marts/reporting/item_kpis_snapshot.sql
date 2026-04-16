@@ -6,13 +6,13 @@ select
         partition by v.item_name
         order by UNIX_DATE(v.date)
         range between 6 preceding and current row
-    ) as liquidity_index_7d_avg,
+    ) as daily_sales_7d_avg,
     -- 30d average sales volume (liquidity index)
     avg(v.sales_volume) over (
         partition by v.item_name
         order by UNIX_DATE(v.date)
         range between 29 preceding and current row
-    ) as liquidity_index_30d_avg,
+    ) as daily_sales_30d_avg,
     -- 7d sum sales volume
     sum(v.sales_volume) over (
         partition by v.item_name

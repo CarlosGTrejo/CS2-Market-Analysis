@@ -21,9 +21,9 @@ models:
         description: "The date of the aggregation (latest available in fct_volume_daily)."
       - name: item_name
         description: "The exact name of the item."
-      - name: liquidity_index_7d_avg
+      - name: daily_sales_7d_avg
         description: "Average daily sales volume for the item over the trailing 7-day period (liquidity index)."
-      - name: liquidity_index_30d_avg
+      - name: daily_sales_30d_avg
         description: "Average daily sales volume for the item over the trailing 30-day period (liquidity index)."
       - name: sales_volume_7d_sum
         description: "Total sales volume for the item over the trailing 7-day period."
