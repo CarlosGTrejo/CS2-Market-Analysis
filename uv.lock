@@ -432,7 +432,8 @@ dependencies = [
     { name = "dlt", extra = ["bigquery"] },
     { name = "dlthub" },
     { name = "google-cloud-bigquery-storage" },
-    { name = "prefect", extra = ["dbt"] },
+    { name = "google-cloud-storage" },
+    { name = "prefect", extra = ["dbt", "shell"] },
 ]
 
 [package.dev-dependencies]
@@ -457,7 +458,8 @@ requires-dist = [
     { name = "dlt", extras = ["bigquery"], specifier = ">=1.24.0" },
     { name = "dlthub", specifier = ">=0.22.1" },
     { name = "google-cloud-bigquery-storage", specifier = ">=2.37.0" },
-    { name = "prefect", extras = ["dbt"], specifier = ">=3.6.24" },
+    { name = "google-cloud-storage", specifier = ">=3.1.1" },
+    { name = "prefect", extras = ["dbt", "shell"], specifier = ">=3.6.24" },
 ]
 
 [package.metadata.requires-dev]
@@ -2602,6 +2604,9 @@ wheels = [
 [package.optional-dependencies]
 dbt = [
     { name = "prefect-dbt" },
+]
+shell = [
+    { name = "prefect-shell" },
 ]
 
 [[package]]

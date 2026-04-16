@@ -11,6 +11,14 @@ if not region:
         "Valid regions: https://docs.cloud.google.com/storage/docs/locations#location-r"
     )
 
+cloudflare_account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+cloudflare_api_token = os.getenv("CLOUDFLARE_API_TOKEN")
+
+if not cloudflare_account_id or not cloudflare_api_token:
+    raise ValueError(
+        "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN must be set in your .env file."
+    )
+
 gcp_project = pulumi.Config("gcp").get("project") or gcp.config.project
 stack = pulumi.get_stack()
 is_prod = stack == "prod"
@@ -75,7 +83,7 @@ for role in roles:
         ),
     )
 
-# 6. Prefect API Credentials via GCP Secret Manager
+# 6. Prefect API Credentials AND Cloudflare Credentials via GCP Secret Manager
 prefect_api_url = PREFECT_API_URL.value()
 
 prefect_api_key = PREFECT_API_KEY.value()
@@ -107,7 +115,31 @@ gcp.secretmanager.SecretIamMember(
         "serviceAccount:{SA_email}", SA_email=pipeline_sa.email
     ),
 )
-secret_id = prefect_api_key_secret.secret_id
+
+
+# Cloudflare API Token via GCP Secret Manager
+cloudflare_api_token_secret = gcp.secretmanager.Secret(
+    "cloudflare-api-token-secret",
+    secret_id=f"cloudflare-api-token-{stack}",
+    replication=gcp.secretmanager.SecretReplicationArgs(
+        auto=gcp.secretmanager.SecretReplicationAutoArgs()
+    ),
+)
+
+gcp.secretmanager.SecretVersion(
+    "cloudflare-api-token-secret-version",
+    secret=cloudflare_api_token_secret.id,
+    secret_data=cloudflare_api_token,
+)
+
+gcp.secretmanager.SecretIamMember(
+    "cloudflare-api-token-accessor",
+    secret_id=cloudflare_api_token_secret.id,
+    role="roles/secretmanager.secretAccessor",
+    member=pulumi.Output.format(
+        "serviceAccount:{SA_email}", SA_email=pipeline_sa.email
+    ),
+)
 
 # 7. Cloud Run V2 Job
 placeholder_image = "us-docker.pkg.dev/cloudrun/container/job:latest"
@@ -145,20 +177,36 @@ envs = [
         name="PULUMI_STACK",
         value=stack,
     ),
+    gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
+        name="CLOUDFLARE_ACCOUNT_ID",
+        value=cloudflare_account_id,
+    ),
 ]
 
-if secret_id:
-    envs.append(
-        gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
-            name="PREFECT_API_KEY",
-            value_source=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceArgs(
-                secret_key_ref=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceSecretKeyRefArgs(
-                    secret=secret_id,
-                    version="latest",
-                )
-            ),
-        )
+envs.append(
+    gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
+        name="PREFECT_API_KEY",
+        value_source=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceArgs(
+            secret_key_ref=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceSecretKeyRefArgs(
+                secret=prefect_api_key_secret.secret_id,
+                version="latest",
+            )
+        ),
     )
+)
+
+# Inject Cloudflare API Token
+envs.append(
+    gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
+        name="CLOUDFLARE_API_TOKEN",
+        value_source=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceArgs(
+            secret_key_ref=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceSecretKeyRefArgs(
+                secret=cloudflare_api_token_secret.secret_id,
+                version="latest",
+            )
+        ),
+    )
+)
 
 cloud_run_job = gcp.cloudrunv2.Job(
     "cs2-market-analysis-job",

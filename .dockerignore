@@ -14,3 +14,9 @@ transform/user.yml
 README.md
 LICENSE
 .github
+
+# Observable Framework specific ignores
+.wrangler/
+dist/
+node_modules/
+.observablehq/

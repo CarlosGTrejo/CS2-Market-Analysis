@@ -41,15 +41,21 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Set the dbt profiles directory so dbt knows where to find profiles.yml
 ENV DBT_PROFILES_DIR=/app/pipelines/transform
 
-# (Optional but recommended): If any of your dbt packages in packages.yml 
-# pull directly from a GitHub URL instead of the dbt Hub, you must install git.
-# RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+# 1. Copy the bun binary directly from the official image
+# Placing it in /usr/local/bin ensures it is automatically in the system PATH
+COPY --from=oven/bun:latest /usr/local/bin/bun /usr/local/bin/bun
 
 # Copy the compiled environment AND the compiled application code from the builder.
 # This ensures we get the bytecode while leaving the infra/ directory behind.
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/flows /app/flows
 COPY --from=builder /app/pipelines /app/pipelines
+
+# 2. Copy the dashboard source code into the production image
+COPY dashboard /app/dashboard
+
+# 3. Install dashboard dependencies using the copied bun binary
+RUN cd /app/dashboard && bun install
 
 # Pre-compile dbt dependencies to ensure a frictionless runtime
 RUN dbt deps --project-dir /app/pipelines/transform
