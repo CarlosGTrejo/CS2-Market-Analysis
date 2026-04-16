@@ -1,5 +1,5 @@
 ---
-theme: dashboard
+theme: [midnight, alt, wide]
 title: CS2 Market Analysis
 toc: false
 sql:
@@ -135,7 +135,7 @@ const itemsPlot = Plot.plot({
 <div class="grid grid-cols-3 grid-rows-1 gap-4">
   <div class="card">
     <h2>Item Liquidity Analysis</h2>
-    <h3>Use the search box and table below to explore how item price correlates with liquidity (average daily sales) across different items.</h3>
+    <h3>Use the table to explore how item price correlates with liquidity (average daily sales) across different items.</h3>
 
   ${itemsPlot}
 

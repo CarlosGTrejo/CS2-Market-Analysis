@@ -1,0 +1,11 @@
+name = "cs2-market-dashboard"
+compatibility_date = "2026-04-16"
+
+# Define the entrypoint for our middleware proxy
+main = "./worker.js"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+# Crucial: Forces the worker to intercept requests before serving assets
+run_worker_first = true
