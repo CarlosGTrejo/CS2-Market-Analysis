@@ -12,6 +12,7 @@
 An end-to-end, data engineering ELT pipeline for analyzing the CS2 market.
 
 ---
+
 <details open>
 <summary><h2>Table of Contents</h2></summary>
 
@@ -23,6 +24,7 @@ An end-to-end, data engineering ELT pipeline for analyzing the CS2 market.
 - [Future Improvements](#future-improvements)
 
 </details>
+
 ---
 
 ## Problem Statement
