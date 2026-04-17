@@ -14,7 +14,7 @@ An end-to-end, data engineering ELT pipeline for analyzing the CS2 market.
 ---
 
 <details open>
-<summary><h2>Table of Contents</h2></summary>
+<summary>Table of Contents</summary>
 
 - [Problem Statement](#problem-statement)
 - [Architecture & Tech Stack](#architecture--tech-stack)
@@ -70,33 +70,43 @@ This project uses the following stack:
 ```mermaid
 ---
 config:
-  layout: dagre
+  flowchart:
+    defaultRenderer: "elk"
 ---
 flowchart LR
+    %% ========================================================
+    %% 1. NODES & STRUCTURE (Declarations Only)
+    %% ========================================================
+    
     %% External Data Sources
     steam_market["Steam Market"]@{ shape: rect }
     proxy_server["Proxy"]@{ shape: rect }
 
     %% Google Cloud Environment
-    subgraph gcp_cloud["Google Cloud Platform"]
-      cloud_scheduler["Cloud Scheduler"]@{ shape: stadium }
+    subgraph gcp_cloud["`**Google Cloud Platform**`"]
 
-        secret_manager["🔐 Secret Manager"]@{ shape: rect, pos: "t" }
+        %% Orchestration & Control Plane
+        subgraph control_plane["Control Plane"]
+            artifact_registry["Artifact Registry"]@{ shape: cyl }
+            cloud_scheduler["Cloud Scheduler"]@{ shape: stadium }
+            secret_manager["Secret Manager"]@{ shape: rect }
 
-        subgraph docker_env["Docker Container"]
-            subgraph prefect_orchestration["Prefect Flow"]
-                task_extract_load["Extract/Load"]@{ shape: h-cyl }
-                task_transform["Transform"]@{ shape: h-cyl }
-                task_build_deploy["Build/Deploy"]@{ shape: h-cyl }
+            subgraph cloud_run_env["`**Cloud Run** (Docker)`"]
+                subgraph prefect_orchestration["Prefect Flow"]
+                    task_extract_load["Extract/Load \n (dlt)"]@{ shape: h-cyl }
+                    task_transform["Transform \n (dbt)"]@{ shape: h-cyl }
+                    task_build["Build \n (bun)"]@{ shape: h-cyl }
+                    task_deploy["Deploy \n (Wrangler)"]@{ shape: h-cyl }
+                end
             end
         end
 
-        subgraph gcs_datalake["Cloud Storage (Data Lake)"]
-            raw_data_gcs["Raw Data"]@{ shape: cyl }
-            parquet_export["Parquet"]@{ shape: internal-storage }
+        subgraph gcs_datalake["`**Cloud Storage** (Data Lake)`"]
+            raw_data_gcs["Raw Data \n (as Parquet)"]@{ shape: procs }
+            parquet_export["Parquet \n Files"]@{ shape: procs }
         end
 
-        subgraph bigquery_dw["BigQuery (Data Warehouse)"]
+        subgraph bigquery_dw["`**BigQuery** (Data Warehouse)`"]
             bq_raw["Raw"]@{ shape: das }
             bq_staging["Staging"]@{ shape: das }
             bq_intermediate["Intermediate"]@{ shape: das }
@@ -107,51 +117,120 @@ flowchart LR
 
     %% Edge Cloud / Frontend
     subgraph cloudflare_edge["Cloudflare Workers"]
-        observable_dashboard["Observable Framework BI Dashboard"]
+        observable_dashboard["Observable Framework \n BI Dashboard"]
     end
 
-    %% --- Connections ---
-    steam_market ==> proxy_server
-    proxy_server ==> task_extract_load
-    task_extract_load === raw_data_gcs
-    raw_data_gcs ==> bq_raw
-    bq_raw ==> task_transform
-    task_transform ==> bq_staging
-    bq_staging -- "dbt" --> bq_intermediate
-    bq_intermediate -- "dbt" --> bq_marts
-    bq_marts -- "dbt" --> bq_reporting
-    bq_reporting -- "dbt post-hook" --> parquet_export
-    parquet_export ==> task_build_deploy
-    task_build_deploy ==> observable_dashboard
-    secret_manager -.- docker_env
-    cloud_scheduler -. "Triggers via Push" .-> docker_env
+    %% ========================================================
+    %% 2. EDGES & CONNECTIONS
+    %% ========================================================
 
-    %% --- Global/Base Classes ---
-    classDef default fill:#f9f9f9,stroke:#333,stroke-width:1px,color:#000;
-    classDef gcpContainer fill:#F8FAFC,stroke:#2962FF,stroke-width:2px,color:#000;
-    classDef cloudflareContainer fill:#FFF3E0,stroke:#F57C00,stroke-width:2px,color:#000;
-    classDef pipelineNode fill:#BBDEFB,stroke:#2962FF,stroke-width:1px,color:#000;
+    %% --- Data Flow Connections (Animated - Indexes 0 to 10) ---
+    steam_market f1@--> proxy_server
+    proxy_server f2@--> task_extract_load
+    task_extract_load f3@--> raw_data_gcs
+    raw_data_gcs f4@--> bq_raw
+    bq_raw f5@--> bq_staging
+    bq_staging f6@--> bq_intermediate
+    bq_intermediate f7@--> bq_marts
+    bq_marts f8@--> bq_reporting
+    bq_reporting f9@-->|"dbt post-hook"| parquet_export
+    parquet_export f10@--> task_build
+    task_deploy f11@--> observable_dashboard
+
+    f1@{ animate: true }
+    f2@{ animate: true }
+    f3@{ animate: true }
+    f4@{ animate: true }
+    f5@{ animate: true }
+    f6@{ animate: true }
+    f7@{ animate: true }
+    f8@{ animate: true }
+    f9@{ animate: true }
+    f10@{ animate: true }
+    f11@{ animate: true }
+
+    %% --- Prefect Internal Dependency Flow (Animated - Indexes 11 to 13) ---
+    task_extract_load p1@-.-> task_transform 
+    task_transform p2@-.-> task_build 
+    task_build p3@-.-> task_deploy
     
-    %% --- Subgraph Isolation Classes ---
-    %% Using soft pastel fills with bold borders and dashed lines for nested components
-    classDef dockerEnv fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px,color:#000,stroke-dasharray: 5 5;
-    classDef prefectFlow fill:#E0F7FA,stroke:#00ACC1,stroke-width:2px,color:#000;
-    classDef dataLake fill:#FFF9C4,stroke:#FBC02D,stroke-width:2px,color:#000,stroke-dasharray: 5 5;
-    classDef dataWarehouse fill:#E8F5E9,stroke:#43A047,stroke-width:2px,color:#000,stroke-dasharray: 5 5;
+    p1@{ animate: true }
+    p2@{ animate: true }
+    p3@{ animate: true }
+
+    %% --- Control Flow Connections (Dotted Lines - Indexes 14 to 17) ---
+    artifact_registry -. "Pulls Image" .-> cloud_run_env
+    cloud_scheduler -. "Triggers via Push" .-> cloud_run_env
+    secret_manager -. "Injects" .-> cloud_run_env
+    task_transform -. "Orchestrates" .-> bigquery_dw
+
+
+    %% ========================================================
+    %% 3. STYLING & CLASSES
+    %% ========================================================
+    
+    %% Base style for unassigned elements
+    classDef default fill:transparent,stroke:#888,stroke-width:1.5px;
+    
+    %% Container Outlines
+    classDef gcpContainer fill:transparent,stroke:#5f6368,stroke-width:2px;
+    classDef cloudflareContainer fill:#9E339F0D,stroke:#9E339F,stroke-width:1.5px,stroke-dasharray: 5 5;
+    
+    %% Updated Subgraph Styling with Custom Text Colors
+    classDef controlPlane fill:#5C6BC00A,stroke:#5C6BC0,stroke-width:1.5px,stroke-dasharray: 5 5;
+    classDef dockerEnv fill:#4285F40A,stroke:#4285F4,stroke-width:1.5px,stroke-dasharray: 5 5,color:#4285F4;
+    classDef dataLake fill:#FBBC040A,stroke:#FBBC04,stroke-width:1.5px,stroke-dasharray: 5 5,color:#FBBC04;
+    classDef dataWarehouse fill:#34A8530A,stroke:#34A853,stroke-width:1.5px,stroke-dasharray: 5 5,color:#34A853;
+    
+    classDef prefectFlow fill:transparent,stroke:#4285F4,stroke-width:1px;
+    
+    %% Node Outlines 
+    classDef computeNode fill:#4285F433,stroke:#4285F4,stroke-width:2px; 
+    classDef bqNode fill:#34A85333,stroke:#34A853,stroke-width:2px;
+    classDef gcsNode fill:#FBBC0433,stroke:#FBBC04,stroke-width:2px;
+    classDef edgeNode fill:#9E339F33,stroke:#9E339F,stroke-width:2px;
+    
+    %% Singletons
+    classDef secretManagerStyle fill:#FBBC0433,stroke:#FBBC04,stroke-width:2px;
+    classDef cloudSchedulerStyle fill:#34A85333,stroke:#34A853,stroke-width:2px;
+    classDef artifactRegistryStyle fill:#EA433533,stroke:#EA4335,stroke-width:2px;
 
     %% --- Apply Classes ---
     class gcp_cloud gcpContainer;
     class cloudflare_edge cloudflareContainer;
-    class bq_staging,bq_intermediate,bq_marts,bq_reporting,bq_raw,task_extract_load,task_transform,task_build_deploy pipelineNode;
-    
-    %% Apply Subgraph Classes
-    class docker_env dockerEnv;
-    class prefect_orchestration prefectFlow;
+    class control_plane controlPlane;
     class gcs_datalake dataLake;
     class bigquery_dw dataWarehouse;
-
+    class cloud_run_env dockerEnv;
+    class prefect_orchestration prefectFlow;
+    
+    class bq_staging,bq_intermediate,bq_marts,bq_reporting,bq_raw bqNode;
+    class raw_data_gcs,parquet_export gcsNode;
+    class task_extract_load,task_transform,task_build,task_deploy computeNode;
+    class steam_market,proxy_server,observable_dashboard edgeNode;
+    
+    class secret_manager secretManagerStyle;
+    class cloud_scheduler cloudSchedulerStyle;
+    class artifact_registry artifactRegistryStyle;
+    
     %% --- Link Styles ---
-    linkStyle default stroke:#2962FF,stroke-width:2px,fill:none;
+    %% Default all non-data lines to a softer grey
+    linkStyle default stroke:#9AA0A6,stroke-width:1.5px,fill:none;
+    
+    %% Primary Animated Data Path (Indexes 0 through 10) - Vibrant Green & Thicker
+    linkStyle 0,1,2,3,4,5,6,7,8,9,10 stroke:#0F9D58,stroke-width:2.5px,fill:none;
+    
+    %% Prefect Internal Flow Path (Indexes 11 through 13) - Blue & Dashed
+    linkStyle 11,12,13 stroke:#4285F4,stroke-width:2.5px,fill:none,stroke-dasharray:5 5;
+    %% --- Link Styles ---
+    %% Default all non-data lines to a softer grey
+    linkStyle default stroke:#333,stroke-width:1.5px;
+    
+    %% Primary Animated Data Path (Indexes 0 through 10) - Vibrant Green & Thicker
+    linkStyle 0,1,2,3,4,5,6,7,8,9,10 stroke:#0F9D58,stroke-width:2.5px;
+    
+    %% Prefect Internal Flow Path (Indexes 11 through 13) - Blue & Dashed
+    linkStyle 11,12,13 stroke:#4285F4,stroke-width:2.5px;
 ```
 
 ---
