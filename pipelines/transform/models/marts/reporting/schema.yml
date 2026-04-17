@@ -2,32 +2,41 @@ version: 2
 
 models:
   - name: market_kpis
-    description: "Global market key performance indicators aggregated daily. Used for top-level dashboard metrics."
+    description: "Global market key performance indicators aggregated daily. Used
+      for top-level dashboard metrics."
     columns:
       - name: snapshot_date
         description: "The date of the market snapshot."
         tests:
           - not_null
           - unique
-      - name: total_market_volume
-        description: "The total sum of all active sell listings across the market for this date."
+      - name: total_market_listings
+        description: "The total sum of all active sell listings across the market for
+          this date."
       - name: avg_listing_premium
-        description: "Average percentage difference between listing price and actual sale price. Indicates the average markup sellers are asking above the final sale price."
+        description: "Average percentage difference between listing price and actual
+          sale price. Indicates the average markup sellers are asking above the
+          final sale price."
 
   - name: item_kpis_snapshot
-    description: "Aggregated item-level KPIs for the latest available date, including liquidity indexes, rolling sales volumes, and active sell price. Used for dashboard table and scatter plot."
+    description: "Aggregated item-level KPIs for the latest available date,
+      including avg daily sales, rolling sales volumes, and active sell price.
+      Used for dashboard table and scatter plot."
     columns:
       - name: date
         description: "The date of the aggregation (latest available in fct_volume_daily)."
       - name: item_name
         description: "The exact name of the item."
       - name: daily_sales_7d_avg
-        description: "Average daily sales volume for the item over the trailing 7-day period (liquidity index)."
+        description: "Average daily sales volume for the item over the trailing 7-day
+          period."
       - name: daily_sales_30d_avg
-        description: "Average daily sales volume for the item over the trailing 30-day period (liquidity index)."
+        description: "Average daily sales volume for the item over the trailing 30-day
+          period."
       - name: sales_volume_7d_sum
         description: "Total sales volume for the item over the trailing 7-day period."
       - name: sales_volume_30d_sum
         description: "Total sales volume for the item over the trailing 30-day period."
       - name: sell_price_usd
-        description: "Active sell price for the item in USD, as of the latest market snapshot."
+        description: "Active sell price for the item in USD, as of the latest market
+          snapshot."
