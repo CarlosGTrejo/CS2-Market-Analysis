@@ -15,8 +15,8 @@ renamed_and_casted as (
         cast(volume as int64) as sales_volume,
         
         -- dlt pipeline metadata (optional, but good for lineage/auditing)
-        cast(_dlt_id as string) as dlt_id,
-        cast(_dlt_load_id as string) as dlt_load_id
+        cast(_dlt_id as string) as _dlt_id,
+        cast(_dlt_load_id as string) as _dlt_load_id
     from source
 ),
 
@@ -26,7 +26,7 @@ deduplicated as (
     -- BigQuery best-practice deduplication: Keep the most recently loaded record per item & timestamp
     qualify row_number() over (
         partition by item_name, price_timestamp
-        order by dlt_load_id desc
+        order by _dlt_load_id desc
     ) = 1
 )
 

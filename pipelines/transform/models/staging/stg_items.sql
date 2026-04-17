@@ -19,18 +19,18 @@ renamed_and_casted as (
         cast(asset_description__commodity as BOOL) as is_commodity,
         
         -- Pricing & Metrics
-        safe_cast(sell_listings as int64) as sell_listings_count,
-        safe_cast(sell_price as int64) as sell_price_cents,
-        safe_cast(sell_price as numeric) / 100 as sell_price_usd,
+        safe_cast(sell_listings as int64) as ask_count,
+        safe_cast(sell_price as int64) as ask_price_cents,
+        safe_cast(sell_price as numeric) / 100 as ask_price_usd,
         -- Extract numbers/decimals from text and cast safely:
-        safe_cast(regexp_replace(sale_price_text, r'[^0-9\.]', '') as numeric) as sale_price_usd_from_text,
+        safe_cast(regexp_replace(sale_price_text, r'[^0-9\.]', '') as numeric) as bid_price_usd,
         
         -- Dates
         safe_cast(snapshot_date as date) as snapshot_date,
         
         -- dlt pipeline metadata
-        cast(_dlt_id as string) as dlt_id,
-        cast(_dlt_load_id as string) as dlt_load_id
+        cast(_dlt_id as string) as _dlt_id,
+        cast(_dlt_load_id as string) as _dlt_load_id
 
     from source
 ),
@@ -41,7 +41,7 @@ deduplicated as (
     -- BigQuery best-practice deduplication: Keep the most recent/populated record per item per date
     qualify row_number() over (
         partition by item_name, snapshot_date 
-        order by dlt_load_id desc, sell_listings_count desc
+        order by _dlt_load_id desc, ask_count desc
     ) = 1
 )
 
