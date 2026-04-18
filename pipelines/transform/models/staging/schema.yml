@@ -78,9 +78,8 @@ models:
       - name: item_name
         description: Name of the market item, including any special attributes or
           conditions (e.g., 'Factory New', 'StatTrak').
-      - name: price_timestamp
-        description: Timestamp of the price record, indicating when the price and sales
-          volume was recorded.
+      - name: priced_at
+        description: Timestamp indicating when the price and sales volume was recorded.
       - name: median_sale_price_usd
         description: Median sale price of the item in USD at the given timestamp.
         data_type: NUMERIC
