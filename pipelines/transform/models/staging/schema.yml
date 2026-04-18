@@ -1,17 +1,28 @@
+version: 2
+
 models:
   - name: stg_items
     description: >
-      Staging model for items data. Standardizes column names and data types
-      from the raw items_external source. Many of the name column were found to
-      be duplicate, so we kept only one of them and renamed it to item_name for
-      clarity.
+      Staging model for daily marketplace item data. Standardizes column names
+      and data types from the raw items_raw source. 
+
+      **Grain:** One row per `item_name` per `snapshot_date`.
+
+      **Transformation Logic:** Performs intra-day deduplication to resolve
+      potential  API pagination overlaps during extraction. It guarantees
+      determinism by selecting  the most recent record per day based on the
+      ingestion batch (`_dlt_load_id`),  falling back to the highest active
+      listing count (`ask_count`) as a tie-breaker  to protect against momentary
+      API anomalies.
     columns:
       - name: item_name
         description: Name of the market item, including any special attributes or
           conditions (e.g., 'Factory New', 'StatTrak').
+        data_type: STRING
       - name: class_id
         description: Identifier for the item class, used to link to the dim_item_class
           dimension table.
+        data_type: INT64
       - name: bucket_group_id
         description: >
           String identifier for the market bucket group, used to link to the
@@ -24,25 +35,31 @@ models:
           Name of the market bucket group, providing a human-readable label for
           the bucket_group_id. This is a broader categorization than class_id
           (i.e. there are less bucket groups than classes).
+        data_type: STRING
       - name: item_type
         description: >
           Type of the item, including ordinal classification (e.g., 'Exotic
           Collectible', 'Covert Rifle', 'Base Grade Container', 'Superior
           Agent'). Seems to be even broader than market bucket group.
+        data_type: STRING
       - name: name_color
         description: Hex color code of the item name, which can indicate rarity or
           special attributes (e.g., pink for 'Covert' items)
+        data_type: STRING
       - name: is_tradable
         description: Boolean flag indicating whether the item is tradable on the market.
+        data_type: BOOL
       - name: is_commodity
         description: >
           Boolean indicating if the item is a commodity, which means it has no
           distinct attributes, like a sticker capsule. Non-commodity items can
           have different variations (e.g., different wear levels, StatTrak
           versions) that affect their market value.
+        data_type: BOOL
       - name: ask_count
         description: Number of active sell listings for the item on the market,
           indicating its current supply.
+        data_type: INT64
       - name: ask_price_cents
         description: Lowest price item is selling for in cents, representing the current
           market price.
@@ -72,8 +89,15 @@ models:
 
   - name: stg_item_price_history
     description: >
-      Staging model for item price history data. Standardizes column names and
-      data types from the raw item_price_history_external source.
+      Staging model for historical marketplace sales data. Standardizes column
+      names  and data types from the raw item_price_history_raw source.
+
+      **Grain:** One row per `item_name` per `priced_at` timestamp.
+
+      **Transformation Logic:** Performs deduplication to guarantee
+      determinism.  It keeps the most recently loaded record per item and
+      timestamp partition  by sorting on `_dlt_load_id desc` to ensure the
+      latest pipeline run takes precedence.
     columns:
       - name: item_name
         description: Name of the market item, including any special attributes or
