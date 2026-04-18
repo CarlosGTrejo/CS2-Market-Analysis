@@ -9,12 +9,12 @@ renamed_and_casted as (
         -- Identifiers
         cast(asset_description__market_hash_name as string) as item_name,
         safe_cast(asset_description__classid as int64) as class_id,
-        cast(asset_description__market_bucket_group_id as string) as market_bucket_group_id,
+        cast(asset_description__market_bucket_group_id as string) as bucket_group_id,
         
         -- Characteristics
         cast(asset_description__type as string) as item_type,
         cast(asset_description__name_color as string) as name_color,
-        cast(asset_description__market_bucket_group_name as string) as market_bucket_group_name,
+        cast(asset_description__market_bucket_group_name as string) as bucket_group_name,
         
         -- Booleans
         cast(asset_description__tradable as BOOL) as is_tradable,
