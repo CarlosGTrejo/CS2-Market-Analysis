@@ -1,8 +1,18 @@
-select
-    item_name,
-    date(price_timestamp) as price_date,
-    sum(sales_volume) as total_sales_volume,
-    min(median_sale_price_usd) as min_median_sale_price_usd,
-    max(median_sale_price_usd) as max_median_sale_price_usd
-from {{ ref('stg_item_price_history') }}
-group by 1, 2
+with stg_item_price_history as (
+    select * from {{ ref('stg_item_price_history') }}
+),
+
+daily_metrics as (
+    select
+        item_name,
+        date(priced_at) as price_date,
+        sum(units_sold) as daily_units_sold,
+        sum(units_sold * median_sale_price_usd) as daily_trade_volume_usd,
+        avg(median_sale_price_usd) as daily_avg_median_sale_price_usd
+        
+    from stg_item_price_history
+    group by 1, 2
+)
+
+select *
+from daily_metrics
