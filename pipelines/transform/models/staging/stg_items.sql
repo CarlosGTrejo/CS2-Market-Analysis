@@ -1,4 +1,6 @@
-with source as (
+-- TODO: Consider adding a surrogate key?
+
+with raw_market_data as (
     select * from {{ source('raw_market_data', 'items_raw') }}
 ),
 
@@ -26,13 +28,13 @@ renamed_and_casted as (
         safe_cast(regexp_replace(sale_price_text, r'[^0-9\.]', '') as numeric) as bid_price_usd,
         
         -- Dates
-        safe_cast(snapshot_date as date) as snapshot_date,
+        safe_cast(snapshot_timestamp as date) as snapshot_date,
         
         -- dlt pipeline metadata
         cast(_dlt_id as string) as _dlt_id,
         cast(_dlt_load_id as string) as _dlt_load_id
 
-    from source
+    from raw_market_data
 ),
 
 deduplicated as (

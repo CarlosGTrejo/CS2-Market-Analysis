@@ -45,7 +45,7 @@ proxy_enabled_session.headers.update(
 # Global snapshot date to ensure consistency across all records in a single run.
 # This avoids multiple calls to datetime.now() and ensures all item metadata
 # belongs to the same logical batch. ContextVar makes it safe for concurrent runs.
-GLOBAL_SNAPSHOT_DATE: ContextVar[datetime] = ContextVar("snapshot_date")
+GLOBAL_SNAPSHOT_TIMESTAMP: ContextVar[datetime] = ContextVar("snapshot_timestamp")
 
 # Using two separate resources (items and item_price_history) is the best approach.
 # It avoids emitting redundant item data for each price/volume datapoint,
@@ -88,9 +88,9 @@ items_data_source = rest_api_source(
 )
 
 
-def add_snapshot_date(item):
+def add_snapshot_timestamp(item):
     # Use the global batch timestamp (thread-safe)
-    item["snapshot_date"] = GLOBAL_SNAPSHOT_DATE.get()
+    item["snapshot_timestamp"] = GLOBAL_SNAPSHOT_TIMESTAMP.get()
     return item
 
 
@@ -122,12 +122,12 @@ def remove_redundant_columns(item):
     return item
 
 
-items_data_source.resources["items_raw"].add_map(add_snapshot_date)
+items_data_source.resources["items_raw"].add_map(add_snapshot_timestamp)
 items_data_source.resources["items_raw"].add_map(remove_redundant_columns)
 
 bigquery_adapter(
     items_data_source.resources["items_raw"],
-    partition="snapshot_date",
+    partition="snapshot_timestamp",
     cluster=["asset_description__market_hash_name"],
 )
 
@@ -196,7 +196,7 @@ def extract_median_price_sale_history(item) -> Iterator[PriceRecord]:
 def run_ingest():
     # Set the logical timestamp for the entire batch in the execution context.
     # We keep the full timestamp to allow for future intra-day run support.
-    GLOBAL_SNAPSHOT_DATE.set(datetime.now(timezone.utc))
+    GLOBAL_SNAPSHOT_TIMESTAMP.set(datetime.now(timezone.utc))
 
     if STACK != "prod":
         # Limit non-prod runs to 1 page (10 items) for testing and to avoid unnecessary API calls during development
