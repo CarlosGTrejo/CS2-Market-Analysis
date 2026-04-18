@@ -84,7 +84,7 @@ models:
       - name: median_sale_price_usd
         description: Median sale price of the item in USD at the given timestamp.
         data_type: NUMERIC
-      - name: sales_volume
+      - name: units_sold
         description: Number of units sold at the given timestamp.
         data_type: INT64
       - name: _dlt_id

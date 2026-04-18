@@ -12,7 +12,7 @@ renamed_and_casted as (
         
         -- Metrics
         cast(price as numeric) as median_sale_price_usd,
-        cast(volume as int64) as sales_volume,
+        cast(volume as int64) as units_sold,
         
         -- dlt pipeline metadata (optional, but good for lineage/auditing)
         cast(_dlt_id as string) as _dlt_id,
