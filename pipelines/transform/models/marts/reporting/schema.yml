@@ -10,22 +10,29 @@ models:
         description: Boolean indicating if the grouped items are commodities.
         tests:
           - not_null
+        data_type: BOOLEAN
       - name: market_date
         description: The date of the market activity.
         tests:
           - not_null
+        data_type: DATE
       - name: total_trade_volume_usd
         description: Total trade volume in USD for the given date and commodity grouping.
+        data_type: NUMERIC
       - name: total_active_supply
         description: Total number of active asks (supply) on the market.
+        data_type: INTEGER
       - name: total_units_sold
         description: Total number of units sold.
+        data_type: INTEGER
       - name: group_turnover_rate
         description: >
           The turnover rate for the grouping, calculated as total units sold
           divided  by the total active supply (ask count).
+        data_type: FLOAT
       - name: avg_bid_ask_spread_pct
         description: The average bid-ask spread percentage across the grouping.
+        data_type: NUMERIC
 
   - name: rpt_item_metrics_latest
     description: >
@@ -38,34 +45,47 @@ models:
         tests:
           - not_null
           - unique
+        data_type: STRING
       - name: item_type
         description: The high-level category or type of the item.
+        data_type: STRING
       - name: bucket_group_name
         description: The specific sub-group or bucket the item belongs to.
+        data_type: STRING
       - name: ask_count
         description: The number of active asks for the item on its latest market date.
+        data_type: INTEGER
       - name: ask_price_usd
         description: The lowest available ask price in USD.
+        data_type: NUMERIC
       - name: bid_price_usd
         description: The highest available bid price in USD.
+        data_type: NUMERIC
       - name: daily_units_sold
         description: Number of units sold on the latest market date.
+        data_type: INTEGER
       - name: daily_trade_volume_usd
         description: Trade volume in USD on the latest market date.
+        data_type: NUMERIC
       - name: bid_ask_spread_pct
         description: The percentage difference between the lowest ask and highest bid.
+        data_type: NUMERIC
       - name: turnover_rate
         description: The item's individual turnover rate (units sold / ask count).
+        data_type: FLOAT
       - name: quick_sell_ratio
         description: Ratio indicating how quickly the item is selling relative to its
           supply/demand.
+        data_type: NUMERIC
       - name: is_commodity
         description: Boolean indicating whether the item is treated as a commodity.
+        data_type: BOOLEAN
       - name: market_date
         description: The date these metrics were recorded (represents the latest traded
           date for the item).
         tests:
           - not_null
+        data_type: DATE
 
   - name: rpt_market_metrics_daily
     description: >
@@ -77,15 +97,21 @@ models:
         tests:
           - not_null
           - unique
+        data_type: DATE
       - name: total_trade_volume_usd
         description: Total trade volume across the entire market in USD.
+        data_type: NUMERIC
       - name: total_active_supply
         description: Total number of active asks (supply) across the entire market.
+        data_type: INTEGER
       - name: total_units_sold
         description: Total number of units sold across the entire market.
+        data_type: INTEGER
       - name: market_turnover_rate
         description: >
           The market-wide turnover rate, calculated as total units sold
           divided  by the total active supply.
+        data_type: FLOAT
       - name: avg_bid_ask_spread_pct
         description: The average bid-ask spread percentage across all items in the market.
+        data_type: NUMERIC
