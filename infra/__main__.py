@@ -46,6 +46,7 @@ bq_dataset = gcp.bigquery.Dataset(
     "cs2_market_dwh",
     dataset_id=f"cs2_market_dwh_{stack}",
     location=region,
+    delete_contents_on_destroy=not is_prod,  # Allow dataset deletion in dev, protect in prod
 )
 
 # 4. Create a dedicated Service Account for the pipeline
@@ -224,8 +225,8 @@ cloud_run_job = gcp.cloudrunv2.Job(
             timeout="3600s",  # Give pipeline up to 1 Hour
         )
     ),
-    # Crucial: ignore image changes so we can natively deploy the app
-    # independently via our deployment script script
+    # Ignore image changes so we can deploy the app independently via our deployment script
+    deletion_protection=is_prod,  # Allow destroy in dev, protect in prod
     opts=pulumi.ResourceOptions(
         ignore_changes=["template.template.containers[0].image"]
     ),
