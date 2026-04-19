@@ -1,17 +1,15 @@
-# TODO Verify that dbt_project.yml is correctly configured, standardize naming conventions, and
-# ensure it is properly integrated into the overall project structure and workflow.
 name: "cs2_market_analysis"
 version: "1.0.0"
 config-version: 2
 
 profile: "cs2_market_analysis"
 
-model-paths: ["models"]
-analysis-paths: ["analyses"]
-test-paths: ["tests"]
-seed-paths: ["seeds"]
-macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
+model-paths: [ "models" ]
+analysis-paths: [ "analyses" ]
+test-paths: [ "tests" ]
+seed-paths: [ "seeds" ]
+macro-paths: [ "macros" ]
+snapshot-paths: [ "snapshots" ]
 
 clean-targets:
   - "target"
@@ -19,30 +17,29 @@ clean-targets:
 
 models:
   cs2_market_analysis:
+
+    # ------------------------------------------------------------------
+    # FOLDER-LEVEL DEFAULTS
+    # Model-specific configs (clustering, partitioning, incremental 
+    # strategies) are handled in the {{ config() }} blocks of the .sql files.
+    # ------------------------------------------------------------------
+
     staging:
       +materialized: view
+
     intermediate:
-      +materialized: view
+      # Ephemeral to reduce BigQuery view overhead for simple staging aggregations
+      +materialized: ephemeral
+
     marts:
-      +materialized: incremental
-      +partition_by:
-        field: date
-        data_type: date
-        granularity: day
-      +cluster_by: ["item_name"]
-      fct_market_snapshot_daily:
-        +partition_by:
-          field: snapshot_date
-          data_type: date
-          granularity: day
-      dim_item:
-        +materialized: table
-        +partition_by: null
-        +cluster_by: null
+      # We let the core fact and dimension models define their own 
+      # incremental materializations in their SQL files.
+
       reporting:
+        # Default reporting models to tables unless overridden in the SQL file
         +materialized: table
-        +partition_by: null
-        +cluster_by: null
+
+        # Apply the parquet export macro to everything in the reporting folder
         +post-hook:
           - "{{ export_parquet() }}"
 

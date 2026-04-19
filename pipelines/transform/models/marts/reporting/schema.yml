@@ -1,42 +1,91 @@
 version: 2
 
 models:
-  - name: market_kpis
-    description: "Global market key performance indicators aggregated daily. Used
-      for top-level dashboard metrics."
+  - name: rpt_commodity_velocity_daily
+    description: >
+      Daily aggregated market velocity and volume metrics, grouped by whether
+      the  underlying items are considered commodities. 
     columns:
-      - name: snapshot_date
-        description: "The date of the market snapshot."
+      - name: is_commodity
+        description: Boolean indicating if the grouped items are commodities.
+        tests:
+          - not_null
+      - name: market_date
+        description: The date of the market activity.
+        tests:
+          - not_null
+      - name: total_trade_volume_usd
+        description: Total trade volume in USD for the given date and commodity grouping.
+      - name: total_active_supply
+        description: Total number of active asks (supply) on the market.
+      - name: total_units_sold
+        description: Total number of units sold.
+      - name: group_turnover_rate
+        description: >
+          The turnover rate for the grouping, calculated as total units sold
+          divided  by the total active supply (ask count).
+      - name: avg_bid_ask_spread_pct
+        description: The average bid-ask spread percentage across the grouping.
+
+  - name: rpt_item_metrics_latest
+    description: >
+      A snapshot of the most recent market metrics and attributes for each
+      individual item. This table is filtered to show only the latest available
+      market date per item_name.
+    columns:
+      - name: item_name
+        description: The unique name or identifier of the item.
         tests:
           - not_null
           - unique
-      - name: total_market_listings
-        description: "The total sum of all active sell listings across the market for
-          this date."
-      - name: avg_listing_premium
-        description: "Average percentage difference between listing price and actual
-          sale price. Indicates the average markup sellers are asking above the
-          final sale price."
+      - name: item_type
+        description: The high-level category or type of the item.
+      - name: bucket_group_name
+        description: The specific sub-group or bucket the item belongs to.
+      - name: ask_count
+        description: The number of active asks for the item on its latest market date.
+      - name: ask_price_usd
+        description: The lowest available ask price in USD.
+      - name: bid_price_usd
+        description: The highest available bid price in USD.
+      - name: daily_units_sold
+        description: Number of units sold on the latest market date.
+      - name: daily_trade_volume_usd
+        description: Trade volume in USD on the latest market date.
+      - name: bid_ask_spread_pct
+        description: The percentage difference between the lowest ask and highest bid.
+      - name: turnover_rate
+        description: The item's individual turnover rate (units sold / ask count).
+      - name: quick_sell_ratio
+        description: Ratio indicating how quickly the item is selling relative to its
+          supply/demand.
+      - name: is_commodity
+        description: Boolean indicating whether the item is treated as a commodity.
+      - name: market_date
+        description: The date these metrics were recorded (represents the latest traded
+          date for the item).
+        tests:
+          - not_null
 
-  - name: item_kpis_snapshot
-    description: "Aggregated item-level KPIs for the latest available date,
-      including avg daily sales, rolling sales volumes, and active sell price.
-      Used for dashboard table and scatter plot."
+  - name: rpt_market_metrics_daily
+    description: >
+      Overall daily aggregated market metrics, providing a macro view of
+      total  market volume, supply, and turnover velocity.
     columns:
-      - name: date
-        description: "The date of the aggregation (latest available in fct_volume_daily)."
-      - name: item_name
-        description: "The exact name of the item."
-      - name: daily_sales_7d_avg
-        description: "Average daily sales volume for the item over the trailing 7-day
-          period."
-      - name: daily_sales_30d_avg
-        description: "Average daily sales volume for the item over the trailing 30-day
-          period."
-      - name: sales_volume_7d_sum
-        description: "Total sales volume for the item over the trailing 7-day period."
-      - name: sales_volume_30d_sum
-        description: "Total sales volume for the item over the trailing 30-day period."
-      - name: sell_price_usd
-        description: "Active sell price for the item in USD, as of the latest market
-          snapshot."
+      - name: market_date
+        description: The date of the market activity.
+        tests:
+          - not_null
+          - unique
+      - name: total_trade_volume_usd
+        description: Total trade volume across the entire market in USD.
+      - name: total_active_supply
+        description: Total number of active asks (supply) across the entire market.
+      - name: total_units_sold
+        description: Total number of units sold across the entire market.
+      - name: market_turnover_rate
+        description: >
+          The market-wide turnover rate, calculated as total units sold
+          divided  by the total active supply.
+      - name: avg_bid_ask_spread_pct
+        description: The average bid-ask spread percentage across all items in the market.

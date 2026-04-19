@@ -3,8 +3,8 @@ version: 2
 models:
   - name: dim_item
     description: >
-      Core dimension table containing all static and slowly changing attributes 
-      for CS2 market items. Denormalized for easier querying.
+      Core dimension table containing all static and slowly changing
+      attributes  for CS2 market items. Denormalized for easier querying.
     columns:
       - name: item_name
         description: Name of the market item. Serves as the natural primary key.
@@ -13,9 +13,9 @@ models:
           - not_null
       - name: class_id
         description: Identifier for the item class.
-      - name: market_bucket_group_id
+      - name: bucket_group_id
         description: String identifier for the market bucket group.
-      - name: market_bucket_group_name
+      - name: bucket_group_name
         description: Name of the market bucket group.
       - name: item_type
         description: Type of the item (e.g. 'Covert Rifle', 'Base Grade Container', etc.).
@@ -24,46 +24,61 @@ models:
       - name: is_tradable
         description: Boolean flag indicating if the item is tradable.
       - name: is_commodity
-        description: Boolean indicating if the item is a distinct commodity without variations.
-
-  - name: fct_market_snapshot_daily
-    description: >
-      Fact table built from daily snapshot data. Tracks market supply (sell listings) 
-      and current listing prices.
-    columns:
+        description: Boolean indicating if the item is a distinct commodity without
+          variations.
       - name: snapshot_date
-        description: Date when the market snapshot was taken.
+        description: Date of the item snapshot
         data_tests:
           - not_null
-      - name: item_name
-        description: Name of the market item. Serves as a foreign key to dim_item.
-        data_tests:
-          - not_null
-      - name: sell_listings_count
-        description: Number of active sell listings on the market.
-      - name: sell_price_cents
-        description: Lowest active sell price in cents.
-      - name: sell_price_usd
-        description: Lowest active sell price in USD.
-      - name: sale_price_usd_from_text
-        description: Highest willingness-to-pay buy order price, converted to USD.
 
-  - name: fct_volume_daily
-    description: >
-      Fact table tracking the daily historical sales volume and price 
-      fluctuations for market items.
+  - name: fct_market_daily
+    description: |
+      Fact table containing daily market KPIs for each item, including prices, volumes, spreads, and calculated metrics. Incrementally loaded and partitioned by market_date for efficient querying.
     columns:
-      - name: date
-        description: The date of the sales activities.
-        data_tests:
-          - not_null
       - name: item_name
-        description: Name of the market item. Serves as a foreign key to dim_item.
+        description: Name of the market item.
         data_tests:
           - not_null
-      - name: sales_volume
-        description: Total quantity of the item sold on this date.
-      - name: min_median_sale_price_usd
-        description: Minimum observed median sale price in USD on this date.
-      - name: max_median_sale_price_usd
-        description: Maximum observed median sale price in USD on this date.
+      - name: ask_count
+        description: Number of active sell orders for the item on the market snapshot date.
+        data_tests:
+          - not_null
+      - name: ask_price_usd
+        description: Lowest listed price (USD) for the item on the market snapshot date.
+        data_tests:
+          - not_null
+      - name: bid_price_usd
+        description: Highest buy order price (USD) for the item on the market snapshot date.
+        data_tests:
+          - not_null
+      - name: daily_units_sold
+        description: Number of units sold for the item on the given date.
+        data_tests:
+          - not_null
+      - name: daily_trade_volume_usd
+        description: Total trade volume (USD) for the item on the given date.
+        data_tests:
+          - not_null
+      - name: daily_avg_median_sale_price_usd
+        description: Median sale price (USD) for the item on the given date.
+        data_tests:
+          - not_null
+      - name: bid_ask_spread_pct
+        description: Percentage spread between ask and bid prices. Calculated as
+          (ask_price_usd - bid_price_usd) / bid_price_usd.
+        data_tests:
+          - not_null
+      - name: turnover_rate
+        description: Ratio of units sold to ask count. Indicates market liquidity for
+          the item.
+        data_tests:
+          - not_null
+      - name: quick_sell_ratio
+        description: Ratio of bid price to ask price. Indicates how quickly an item may
+          sell at market prices.
+        data_tests:
+          - not_null
+      - name: market_date
+        description: Date of the market snapshot (partition key).
+        data_tests:
+          - not_null
