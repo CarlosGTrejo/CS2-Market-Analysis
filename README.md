@@ -314,12 +314,20 @@ uv run --env-file .env pulumi up -C infra/
 
 # 8. Configure Docker auth for the Artifact Registry host created by infra
 AR_HOST="$(uv run pulumi stack output artifact_registry_url -C infra | cut -d/ -f1)"
+
+# For powershell:
+$AR_HOST = ((uv run pulumi stack output artifact_registry_url -C infra) -split '/')[0]
+
 gcloud auth configure-docker "$AR_HOST"
 
 # 9. Build, push, and deploy the Docker image to Cloud Run
 # (The deployment script builds the Docker image, pushes it to Artifact Registry, and updates the Cloud Run Job to use the new image)
 # Requires a reachable Docker daemon and a BuildKit-capable builder.
 DOCKER_BUILDKIT=1 uv run --env-file .env flows/deploy.py
+
+# For Powershell:
+$env:DOCKER_BUILDKIT=1
+uv run --env-file .env flows/deploy.py
 ```
 
 ---
