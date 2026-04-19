@@ -3,54 +3,54 @@ theme: [midnight, alt, wide]
 title: CS2 Market Analysis
 toc: false
 sql:
-  market_kpis: data/market_kpis.parquet
-  item_kpis_snapshot: data/item_kpis_snapshot.parquet
+  rpt_commodity_velocity_daily: data/rpt_commodity_velocity_daily.parquet
+  rpt_item_metrics_latest: data/rpt_item_metrics_latest.parquet
+  rpt_market_metrics_daily: data/rpt_market_metrics_daily.parquet
 ---
 
 # CS2 Market Analysis
 
-```sql id=[latest_market_kpis]
-SELECT 
-  snapshot_date,
-  total_market_listings,
-  CAST(avg_listing_premium AS DOUBLE) AS avg_listing_premium
-FROM market_kpis 
-ORDER BY snapshot_date DESC 
-LIMIT 1
+```sql id=commodity_velocity
+SELECT
+  is_commodity,
+  market_date,
+  total_estimated_trade_volume_usd::DOUBLE AS total_estimated_trade_volume_usd,
+  total_active_supply,
+  total_units_sold,
+  group_turnover_rate AS group_turnover_rate,
+  avg_bid_ask_spread_pct::DOUBLE * 100 AS avg_bid_ask_spread_pct
+FROM rpt_commodity_velocity_daily
 ```
 
-```sql id=[highest_volume_item]
-SELECT * FROM item_kpis_snapshot
-ORDER BY sales_volume_30d_sum DESC
-LIMIT 1
-```
-
-```sql id=[highest_volume_item_7d]
-SELECT * FROM item_kpis_snapshot
-ORDER BY sales_volume_7d_sum DESC
-LIMIT 1
-```
-
-```sql id=liquidity_items
+```sql id=item_metrics
 SELECT
   item_name,
-  CAST(sell_price_usd AS DOUBLE) AS sell_price_usd,
-  daily_sales_7d_avg,
-  daily_sales_30d_avg,
-  sales_volume_7d_sum,
-  sales_volume_30d_sum
-FROM item_kpis_snapshot
-ORDER BY daily_sales_30d_avg DESC
+  item_type,
+  bucket_group_name,
+  ask_count,
+  ask_price_usd::DOUBLE AS ask_price_usd,
+  bid_price_usd::DOUBLE AS bid_price_usd,
+  units_sold,
+  total_estimated_trade_volume_usd::DOUBLE AS total_estimated_trade_volume_usd,
+  bid_ask_spread_pct::DOUBLE * 100 AS bid_ask_spread_pct,
+  turnover_rate,
+  quick_sell_ratio::DOUBLE AS quick_sell_ratio,
+  is_commodity,
+  market_date
+FROM rpt_item_metrics_latest
 ```
 
-```sql id=top_10_momentum
+```sql id=[market_metrics]
 SELECT 
-  item_name,
-  daily_sales_7d_avg,
-  daily_sales_30d_avg
-FROM item_kpis_snapshot
-ORDER BY daily_sales_7d_avg DESC
-LIMIT 10
+  market_date,
+  total_estimated_trade_volume_usd::DOUBLE AS total_estimated_trade_volume_usd,
+  total_active_supply,
+  total_units_sold,
+  market_turnover_rate * 100 AS market_turnover_rate,
+  avg_bid_ask_spread_pct::DOUBLE * 100 AS avg_bid_ask_spread_pct
+FROM rpt_market_metrics_daily
+ORDER BY market_date DESC 
+LIMIT 1
 ```
 
 ```js
@@ -78,6 +78,7 @@ const selectedItems = (() => {
 })();
 ```
 
+<!-- vvvvv TODO: FIX or use different plot vvvvv -->
 ```js
 const itemsPlot = Plot.plot({
   color: {
@@ -113,6 +114,7 @@ const itemsPlot = Plot.plot({
 });
 ```
 
+<!-- vvvvv TODO: FIX or use different plot vvvvv -->
 ```js
 // 1. Reshape the wide Arrow Table into a long-format array
 // This gives Observable Plot the exact data structure it expects for groupY
@@ -166,20 +168,35 @@ const dumbbellPlot = Plot.plot({
 });
 ```
 
-<div class="grid grid-cols-3">
-  <div style="display: flex; flex-direction: column; gap: 1rem;">
-  <div class="card" style="flex: 1; margin: 0;">
-    <h2>Average Listing Premium</h2>
-    <span class="big" style="color: var(--theme-foreground-focus);">${Number(latest_market_kpis?.avg_listing_premium || 0).toFixed(2)}%</span>
-    <h3>Average listing markup over historical sale price</h3>
+<div class="grid grid-cols-5">
+  <div class="card">
+    <h2>Total _Estimated_ Trade Volume</h2>
+    <span class="big" style="color: var(--theme-foreground-focus);">$${Number(market_metrics?.total_estimated_trade_volume_usd || 0).toFixed(2)}</span>
+    <h3>_Calculated using median sales data_</h3>
   </div>
     
-  <div class="card" style="flex: 1; margin: 0;">
-    <h2>Total Market Listings</h2>
-    <span class="big">${latest_market_kpis?.total_market_listings?.toLocaleString() || "0"}</span>
+  <div class="card">
+    <h2>Total Market Supply</h2>
+    <span class="big">${market_metrics?.total_active_supply || "0"}</span>
     <h3>Active Listings</h3>
   </div>
+
+  <div class="card">
+    <h2>Total Units Sold</h2>
+    <span class="big">${market_metrics?.total_units_sold || "0"}</span>
+    <h3>Over the past day</h3>
   </div>
+  <div class="card">
+    <h2>Market Turnover Rate</h2>
+    <span class="big">${(market_metrics?.market_turnover_rate || 0).toFixed(1)}%</span>
+    <h3>Calculated as: Total Units Sold / Active Supply</h3>
+  </div>
+  <div class="card">
+    <h2>Market Spread</h2>
+    <span class="big">${Number(market_metrics?.average_bid_ask_spread_pct || 0).toFixed(1)}%</span>
+    <h3>Average Bid-Ask Gap</h3>
+  </div>
+</div>
 
   <div class="card grid-colspan-2" style="margin: 0;">
     <h2>Top 10 High-Momentum Items</h2>
@@ -188,7 +205,6 @@ const dumbbellPlot = Plot.plot({
   ${dumbbellPlot}
     
   </div>
-</div>
 
 <div class="grid grid-cols-3 grid-rows-1 gap-4">
   <div class="card">
@@ -203,7 +219,7 @@ const dumbbellPlot = Plot.plot({
     <div style="padding: 1em 1em 0">
 
 ```js
-const searchItems = view(Inputs.search(liquidity_items));
+const searchItems = view(Inputs.search(item_metrics));
 ```
 
   </div>
