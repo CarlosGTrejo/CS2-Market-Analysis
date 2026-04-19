@@ -39,14 +39,14 @@ joined_and_aggregated as (
         fct_market_daily.market_date,
 
         ---------- numerics
-        sum(fct_market_daily.daily_trade_volume_usd) as total_trade_volume_usd,
+        sum(fct_market_daily.total_estimated_trade_volume_usd) as total_estimated_trade_volume_usd,
         sum(fct_market_daily.ask_count) as total_active_supply,
-        sum(fct_market_daily.daily_units_sold) as total_units_sold,
+        sum(fct_market_daily.units_sold) as total_units_sold,
 
         -- Group Turnover Rate
         case
             when sum(fct_market_daily.ask_count) > 0
-                then sum(fct_market_daily.daily_units_sold) / sum(fct_market_daily.ask_count)
+                then sum(fct_market_daily.units_sold) / sum(fct_market_daily.ask_count)
             else null
         end as group_turnover_rate,
 

@@ -16,8 +16,11 @@ models:
         tests:
           - not_null
         data_type: DATE
-      - name: total_trade_volume_usd
-        description: Total trade volume in USD for the given date and commodity grouping.
+      - name: total_estimated_trade_volume_usd
+        description: >
+          Total estimated trade volume in USD for the given date and commodity
+          grouping. It's estimated because we are only have access to the median
+          sale price, not the actual sale price for each unit sold.
         data_type: NUMERIC
       - name: total_active_supply
         description: Total number of active asks (supply) on the market.
@@ -31,7 +34,8 @@ models:
           divided  by the total active supply (ask count).
         data_type: FLOAT
       - name: avg_bid_ask_spread_pct
-        description: The average bid-ask spread percentage across the grouping.
+        description: >
+          The average bid-ask spread percentage across the grouping.
         data_type: NUMERIC
 
   - name: rpt_item_metrics_latest
@@ -61,10 +65,10 @@ models:
       - name: bid_price_usd
         description: The highest available bid price in USD.
         data_type: NUMERIC
-      - name: daily_units_sold
+      - name: units_sold
         description: Number of units sold on the latest market date.
         data_type: INTEGER
-      - name: daily_trade_volume_usd
+      - name: total_estimated_trade_volume_usd
         description: Trade volume in USD on the latest market date.
         data_type: NUMERIC
       - name: bid_ask_spread_pct
@@ -74,8 +78,9 @@ models:
         description: The item's individual turnover rate (units sold / ask count).
         data_type: FLOAT
       - name: quick_sell_ratio
-        description: Ratio indicating how quickly the item is selling relative to its
-          supply/demand.
+        description: >
+          Ratio indicating buyers' interest. Calculated as
+          stg_items.bid_price_usd / stg_items.ask_price_usd.
         data_type: NUMERIC
       - name: is_commodity
         description: Boolean indicating whether the item is treated as a commodity.
@@ -98,8 +103,8 @@ models:
           - not_null
           - unique
         data_type: DATE
-      - name: total_trade_volume_usd
-        description: Total trade volume across the entire market in USD.
+      - name: total_estimated_trade_volume_usd
+        description: Total estimated trade volume across the entire market in USD.
         data_type: NUMERIC
       - name: total_active_supply
         description: Total number of active asks (supply) across the entire market.
@@ -113,5 +118,8 @@ models:
           divided  by the total active supply.
         data_type: FLOAT
       - name: avg_bid_ask_spread_pct
-        description: The average bid-ask spread percentage across all items in the market.
+        description: >
+          The average bid-ask spread percentage across all items in the market.
+          Calculated as the average of (ask_price_usd - bid_price_usd) /
+          bid_price_usd from fct_market_daily
         data_type: NUMERIC

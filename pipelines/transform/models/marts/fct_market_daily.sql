@@ -31,9 +31,9 @@ joined as (
         stg_items.ask_price_usd,
         stg_items.bid_price_usd,
 
-        coalesce(int_item_price_history_daily.daily_units_sold, 0) as daily_units_sold,
-        coalesce(int_item_price_history_daily.daily_trade_volume_usd, 0) as daily_trade_volume_usd,
-        int_item_price_history_daily.daily_avg_median_sale_price_usd,
+        coalesce(int_item_price_history_daily.units_sold, 0) as units_sold,
+        coalesce(int_item_price_history_daily.total_estimated_trade_volume_usd, 0) as total_estimated_trade_volume_usd,
+        int_item_price_history_daily.avg_median_sale_price_usd,
 
         case
             when stg_items.bid_price_usd > 0
@@ -43,7 +43,7 @@ joined as (
 
         case
             when stg_items.ask_count > 0
-                then coalesce(int_item_price_history_daily.daily_units_sold, 0) / stg_items.ask_count
+                then coalesce(int_item_price_history_daily.units_sold, 0) / stg_items.ask_count
             else null
         end as turnover_rate,
 

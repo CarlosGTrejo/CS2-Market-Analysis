@@ -14,9 +14,12 @@ models:
         description: The aggregated date (at daily grain) for the price and volume metrics.
         data_tests:
           - not_null
-      - name: daily_units_sold
+      - name: units_sold
         description: Total quantity of the item sold during the day.
-      - name: daily_trade_volume_usd
-        description: Total trade volume of the item in USD during the day.
-      - name: daily_avg_median_sale_price_usd
+      - name: total_estimated_trade_volume_usd
+        description: >
+          Estimated trade volume of the item in USD during the day. It's
+          estimated because we are only have access to the median sale price,
+          not the actual sale price for each unit sold.
+      - name: avg_median_sale_price_usd
         description: Average median sale price of the item in USD during the day.

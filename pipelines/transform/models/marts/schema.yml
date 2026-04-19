@@ -51,15 +51,18 @@ models:
         description: Highest buy order price (USD) for the item on the market snapshot date.
         data_tests:
           - not_null
-      - name: daily_units_sold
+      - name: units_sold
         description: Number of units sold for the item on the given date.
         data_tests:
           - not_null
-      - name: daily_trade_volume_usd
-        description: Total trade volume (USD) for the item on the given date.
+      - name: total_estimated_trade_volume_usd
+        description: >
+          Total estimated trade volume (USD) for the item on the given date.
+          It's estimated because we are only have access to the median sale
+          price, not the actual sale price for each unit sold.
         data_tests:
           - not_null
-      - name: daily_avg_median_sale_price_usd
+      - name: avg_median_sale_price_usd
         description: Median sale price (USD) for the item on the given date.
         data_tests:
           - not_null
