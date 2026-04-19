@@ -17,9 +17,7 @@ with stg_items as (
 ),
 
 deduplicated_items as (
-    select 
-        * except(snapshot_date),
-        snapshot_date as updated_at
+    select *
     from stg_items
     qualify row_number() over (
         partition by item_name 

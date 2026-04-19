@@ -7,7 +7,7 @@
       "granularity": "day"
     },
     cluster_by=['item_name'],
-    require_partition_filter=true
+    require_partition_filter=(target.name == 'prod') 
 ) }}
 
 with
