@@ -7,7 +7,8 @@ models:
       the  underlying items are considered commodities. 
     columns:
       - name: is_commodity
-        description: Boolean indicating if the grouped items are commodities.
+        description: Boolean indicating if the metrics are for commodities or
+          non-commodities.
         tests:
           - not_null
         data_type: BOOLEAN
@@ -19,7 +20,7 @@ models:
       - name: total_estimated_trade_volume_usd
         description: >
           Total estimated trade volume in USD for the given date and commodity
-          grouping. It's estimated because we are only have access to the median
+          grouping. It's estimated because we only have access to the median
           sale price, not the actual sale price for each unit sold.
         data_type: NUMERIC
       - name: total_active_supply
