@@ -40,30 +40,23 @@ WHERE market_date = ${market_date}
 ```
 
 ```sql id=commodity_breakdown
-SELECT 
-  CASE WHEN is_commodity THEN 'Commodities' ELSE 'Non-Commodities' END AS category,
-  total_active_supply AS value,
-  'Total Active Supply' AS metric_type
-FROM rpt_commodity_velocity_daily
-WHERE market_date = ${market_date}
-
-UNION ALL
-
-SELECT 
-  CASE WHEN is_commodity THEN 'Commodities' ELSE 'Non-Commodities' END AS category,
-  total_units_sold AS value,
-  'Total Units Sold' AS metric_type
-FROM rpt_commodity_velocity_daily
-WHERE market_date = ${market_date}
-
-UNION ALL
-
-SELECT 
-  CASE WHEN is_commodity THEN 'Commodities' ELSE 'Non-Commodities' END AS category,
-  total_estimated_trade_volume_usd::DOUBLE AS value,
-  'Trade Volume (USD)' AS metric_type
-FROM rpt_commodity_velocity_daily
-WHERE market_date = ${market_date}
+WITH prepared_data AS (
+  SELECT 
+    CASE WHEN is_commodity THEN 'Commodities' ELSE 'Non-Commodities' END AS category,
+    CAST(total_active_supply AS DOUBLE) AS total_active_supply,
+    CAST(total_units_sold AS DOUBLE) AS total_units_sold,
+    CAST(total_estimated_trade_volume_usd AS DOUBLE) AS trade_volume_usd
+  FROM rpt_commodity_velocity_daily
+  WHERE market_date = ${market_date}
+)
+UNPIVOT prepared_data
+ON 
+  total_active_supply AS 'Total Active Supply',
+  total_units_sold AS 'Total Units Sold',
+  trade_volume_usd AS 'Trade Volume (USD)'
+INTO
+  NAME metric_type
+  VALUE value;
 ```
 
 <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
@@ -192,3 +185,7 @@ WHERE market_date = ${market_date}
   ```
   </div>
 </div>
+
+```js
+Inputs.table(commodity_breakdown)
+```
