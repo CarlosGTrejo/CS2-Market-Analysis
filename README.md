@@ -1,13 +1,13 @@
 # CS2 Market Analysis ELT Pipeline
 
 ![Google Cloud Platform](https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)
-![Cloudflare Workers](https://img.shields.io/badge/Cloudflare%20Workers-F48120?style=for-the-badge&logo=Cloudflare&logoColor=white)
+![Pulumi](https://img.shields.io/badge/Pulumi-FFF?style=for-the-badge&logo=pulumi&logoColor=8a3391)
+![Prefect](https://img.shields.io/badge/Prefect-000000?style=for-the-badge&logo=prefect&logoColor=white)
 ![dbt](https://img.shields.io/badge/dbt-FE6703?style=for-the-badge&logo=dbt&logoColor=white)
 ![dlt](https://img.shields.io/badge/dlt-181937?style=for-the-badge&logoColor=75c9e2)
-![Prefect](https://img.shields.io/badge/Prefect-000000?style=for-the-badge&logo=prefect&logoColor=white)
-![Pulumi](https://img.shields.io/badge/Pulumi-FFF?style=for-the-badge&logo=pulumi&logoColor=8a3391)
 ![uv](https://img.shields.io/badge/uv-261230.svg?style=for-the-badge&logo=uv&logoColor=#de5fe9)
 ![Bun](https://img.shields.io/badge/Bun-111?style=for-the-badge&logo=bun&logoColor=fff)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare%20Workers-F48120?style=for-the-badge&logo=Cloudflare&logoColor=white)
 
 An end-to-end, data engineering ELT pipeline for analyzing the CS2 market.
 
@@ -39,6 +39,7 @@ This makes it difficult to track long-term historical trends, evaluate skin valu
 This project addresses this data bottleneck by building an automated, cloud-native ELT pipeline.
 It extracts daily market data and price histories using proxy rotation to navigate API limits, normalizes the raw data into a Google Cloud Storage data lake, and models it within BigQuery. The final output is an interactive BI dashboard built with Observable Framework hosted on Cloudflare Workers, allowing users to explore market trends and insights.
 
+[![View Dashboard](https://img.shields.io/badge/%20-View%20Dashboard-2EA043?style=for-the-badge&logo=observable&logoColor=white)](https://your-dashboard-link-goes-here.com)
 
 ## Architecture & Tech Stack
 
