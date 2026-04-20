@@ -150,12 +150,12 @@ WHERE market_date = ${market_date}
 
   ```js
   Plot.plot({
-    title: "Market Share by Category",
+    title: "Commodity Composition by Market Metrics",
     subtitle: `${market_date.toLocaleDateString()}`,
     y: { 
       grid: true, 
       percent: true, // Formats the Y-axis labels as percentages (0-100%)
-      label: "Share (%)" 
+      label: "% of Total" 
     },
     x: { 
       label: "", 
