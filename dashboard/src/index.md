@@ -9,20 +9,6 @@ sql:
 
 # Market Overview
 
-```sql id=commodity_metrics
-SELECT
-  is_commodity,
-  market_date,
-  total_estimated_trade_volume_usd::DOUBLE AS total_estimated_trade_volume_usd,
-  total_active_supply,
-  total_units_sold,
-  group_turnover_rate * 100 AS group_turnover_rate,
-  avg_bid_ask_spread_pct::DOUBLE * 100 AS avg_bid_ask_spread_pct
-FROM rpt_commodity_velocity_daily
-ORDER BY market_date
-LIMIT 2;
-```
-
 ```sql id=[current_market_metrics]
 SELECT 
   market_date,
@@ -38,6 +24,46 @@ LIMIT 1
 
 ```js
 const market_date = new Date(current_market_metrics?.market_date);
+```
+
+```sql id=commodity_metrics
+SELECT
+  is_commodity,
+  market_date,
+  total_estimated_trade_volume_usd::DOUBLE AS total_estimated_trade_volume_usd,
+  total_active_supply,
+  total_units_sold,
+  group_turnover_rate,
+  avg_bid_ask_spread_pct::DOUBLE AS avg_bid_ask_spread_pct
+FROM rpt_commodity_velocity_daily
+WHERE market_date = ${market_date}
+```
+
+```sql id=commodity_breakdown
+SELECT 
+  CASE WHEN is_commodity THEN 'Commodities' ELSE 'Non-Commodities' END AS category,
+  total_active_supply AS value,
+  'Total Active Supply' AS metric_type
+FROM rpt_commodity_velocity_daily
+WHERE market_date = ${market_date}
+
+UNION ALL
+
+SELECT 
+  CASE WHEN is_commodity THEN 'Commodities' ELSE 'Non-Commodities' END AS category,
+  total_units_sold AS value,
+  'Total Units Sold' AS metric_type
+FROM rpt_commodity_velocity_daily
+WHERE market_date = ${market_date}
+
+UNION ALL
+
+SELECT 
+  CASE WHEN is_commodity THEN 'Commodities' ELSE 'Non-Commodities' END AS category,
+  total_estimated_trade_volume_usd::DOUBLE AS value,
+  'Trade Volume (USD)' AS metric_type
+FROM rpt_commodity_velocity_daily
+WHERE market_date = ${market_date}
 ```
 
 <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
@@ -73,46 +99,96 @@ const market_date = new Date(current_market_metrics?.market_date);
   </div>
 </div>
 
+<div class="grid grid-cols-2">
+  <div class="card">
 
-
-```js
-Plot.plot({
-  title: "Daily Liquidity Matrix",
-  subtitle: `Market State as of ${market_date.toLocaleDateString()}`,
-  grid: true,
-  color: {
-    legend: true,
-    scheme: "category10"
-  },
-  x: { nice: true, label: "Group Turnover Rate (%)" },
-  y: { nice: true, label: "Avg Bid-Ask Spread (%)" },
-  marks: [
-    Plot.dot(commodity_metrics, {
-      x: "group_turnover_rate",
-      y: "avg_bid_ask_spread_pct",
-      fill: (d) => d.is_commodity ? "Commodities" : "Non-Commodities",
-      r: {
-        value: "total_estimated_trade_volume_usd",
-        label: "EST. Trade Vol. (USD)",
-      },
-      channels: {
-        active_supply: {
-          label: "Active Supply",
-          value: "total_active_supply"
+  ```js
+  Plot.plot({
+    title: "Market Liquidity Profile",
+    subtitle: `${market_date.toLocaleDateString()}`,
+    grid: true,
+    color: {
+      legend: true,
+      scheme: "observable10"
+    },
+    x: { nice: true, label: "Trading Turnover (%)", percent: true },
+    y: { nice: true, label: "Relative Spread (%)", percent: true },
+    marks: [
+      Plot.dot(commodity_metrics, {
+        x: "group_turnover_rate",
+        y: "avg_bid_ask_spread_pct",
+        r: {
+          value: "total_estimated_trade_volume_usd",
+          label: "EST. Trade Vol. (USD)",
         },
-        units_sold: {
-          label: "Units Sold",
-          value: "total_units_sold"
+        fill: (d) => d.is_commodity ? "Commodities" : "Non-Commodities",
+        channels: {
+          active_supply: {
+            label: "Active Supply",
+            value: "total_active_supply"
+          },
+          units_sold: {
+            label: "Units Sold",
+            value: "total_units_sold"
+          }
+        },
+        tip: {
+          format: {
+            fill: false,
+            units_sold: true,
+            active_supply: true,
+          }
         }
-      },
-      tip: {
-        format: {
-          fill: false,
-          units_sold: true,
-          active_supply: true,
+      })
+    ]
+  })
+  ```
+
+  </div>
+
+  <div class="card">
+
+  ```js
+  Plot.plot({
+    title: "Market Share by Category",
+    subtitle: `${market_date.toLocaleDateString()}`,
+    y: { 
+      grid: true, 
+      percent: true, // Formats the Y-axis labels as percentages (0-100%)
+      label: "Share (%)" 
+    },
+    x: { 
+      label: "", 
+      domain: ["Total Active Supply", "Total Units Sold", "Trade Volume (USD)"] 
+    },
+    color: {
+      scheme: "observable10",
+      legend: true
+    },
+    marks: [
+      Plot.barY(commodity_breakdown, {
+        x: "metric_type",
+        y: "value",
+        fill: "category",
+        offset: "normalize",
+        channels: {
+          actual_value: {
+            label: "Value",
+            value: "value"
+          }
+        },
+        tip: {
+          format: {
+            x: false,
+            y: false,
+            actual_value: true,
+            fill: true
+          }
         }
-      }
-    })
-  ]
-})
-```
+      }),
+      Plot.ruleY([0])
+    ]
+  })
+  ```
+  </div>
+</div>
