@@ -148,11 +148,11 @@ class PriceRecord(TypedDict):
     write_disposition="merge",
     primary_key=["market_hash_name", "date"],
 )
-def extract_median_price_sale_history(item) -> Iterator[PriceRecord]:
+def extract_median_price_sale_history(item) -> list[PriceRecord]:  # <-- Changed to list
     """Extracts the median sale prices for a given market item"""
     market_hash_name = item.get("asset_description", {}).get("market_hash_name")
     if not market_hash_name:
-        return
+        return []  # <-- Return empty list instead of empty yield
 
     url = f"https://steamcommunity.com/market/listings/730/{quote(market_hash_name)}"
     response = proxy_enabled_session.get(url)
@@ -160,9 +160,8 @@ def extract_median_price_sale_history(item) -> Iterator[PriceRecord]:
     if response.status_code == 200:
         match = PRICE_HISTORY_REGEX.search(response.text)
         if match:
-            json_str = match.group(1)
             try:
-                price_history = json.loads(json_str)
+                price_history = json.loads(match.group(1))
 
                 # State tracking per item hash name
                 state = dlt.current.resource_state()
@@ -171,26 +170,41 @@ def extract_median_price_sale_history(item) -> Iterator[PriceRecord]:
 
                 max_date = last_seen_date
 
-                for data_point in price_history:
+                # 1. Initialize an empty list to hold our batch of records
+                new_records = []
+
+                # 2. Iterate backwards to short-circuit the loop quickly
+                for data_point in reversed(price_history):
                     current_date_str = data_point[0][:11]
                     current_date = datetime.strptime(current_date_str, "%b %d %Y")
 
-                    if current_date > last_seen_date:
-                        # Yielding records one by one is most memory efficient at scale
-                        yield {
+                    if current_date <= last_seen_date:
+                        break  # We've hit data we already have; stop parsing
+
+                    # 3. Append to the list instead of yielding
+                    new_records.append(
+                        {
                             "market_hash_name": market_hash_name,
                             "date": current_date,
                             "price": float(data_point[1]),
                             "volume": int(data_point[2]),
                         }
-                        if current_date > max_date:
-                            max_date = current_date
+                    )
+
+                    if current_date > max_date:
+                        max_date = current_date
 
                 # Persistence of state happens automatically after successful dlt load
-                state[market_hash_name] = max_date.strftime("%b %d %Y")
+                if new_records:
+                    state[market_hash_name] = max_date.strftime("%b %d %Y")
+
+                # 4. Return the complete list at the very end
+                return new_records
 
             except (json.JSONDecodeError, IndexError, ValueError) as e:
                 print(f"Error processing {market_hash_name}: {e}")
+
+    return []  # Ensure we always return a list, even on errors/misses
 
 
 def run_ingest():
