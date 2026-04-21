@@ -1,6 +1,7 @@
 .git
 .gitignore
 .venv
+.env
 __pycache__
 *.pyc
 logs/
@@ -20,3 +21,7 @@ LICENSE
 dist/
 node_modules/
 .observablehq/
+
+# Only include the main flow file
+flows/
+!flows/main_flow.py

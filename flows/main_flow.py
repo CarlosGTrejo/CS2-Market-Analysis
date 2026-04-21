@@ -57,7 +57,7 @@ def run_dbt_transformations():
     return result
 
 
-@task(log_prints=True, retries=2, retry_delay_seconds=30)
+@task(log_prints=True)
 def build_dashboard():
     """Build Observable Framework dashboard using bun."""
     print("Starting dashboard build...")
@@ -89,14 +89,16 @@ def build_dashboard():
     print("Dashboard build successful.")
 
 
-@task(log_prints=True, retries=2, retry_delay_seconds=60)
+@task(log_prints=True)
 def deploy_dashboard():
     """Deploy the built dashboard to Cloudflare using Wrangler."""
     print("Deploying dashboard to Cloudflare via Workers Static Assets...")
     dashboard_dir = Path(__file__).parent.parent / "dashboard"
 
     with ShellOperation(
-        commands=["bun x wrangler deploy"],
+        commands=[
+            f"node /app/dashboard/node_modules/.bin/wrangler deploy --env {os.getenv('PULUMI_STACK', 'dev')}"
+        ],
         working_dir=dashboard_dir,
         stream_output=True,
     ) as shell_operation:
@@ -108,8 +110,8 @@ def deploy_dashboard():
             raise RuntimeError(
                 f"Dashboard deployment failed with exit code {process.return_code}:\n{output}"
             )
-
-    print("Dashboard deployment successful.")
+        else:
+            print("Dashboard deployment successful.")
 
 
 @flow(name=FLOW_NAME, log_prints=True)

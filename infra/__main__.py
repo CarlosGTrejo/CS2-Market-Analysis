@@ -229,7 +229,7 @@ cloud_run_job = gcp.cloudrunv2.Job(
                     ),
                 )
             ],
-            timeout="9000s",
+            timeout="10800s",
         )
     ),
     deletion_protection=is_prod,
