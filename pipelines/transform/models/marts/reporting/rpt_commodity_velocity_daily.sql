@@ -23,22 +23,12 @@ fct_market_daily as (
 
 ),
 
-dim_item as (
-
-    select * from {{ ref('dim_item') }}
-
-),
-
 joined_and_aggregated as (
 
     select
-        ---------- strings / booleans
-        dim_item.is_commodity,
-
-        ---------- dates
+        fct_market_daily.is_commodity,
         fct_market_daily.market_date,
 
-        ---------- numerics
         sum(fct_market_daily.total_estimated_trade_volume_usd) as total_estimated_trade_volume_usd,
         sum(fct_market_daily.ask_count) as total_active_supply,
         sum(fct_market_daily.units_sold) as total_units_sold,
@@ -49,12 +39,7 @@ joined_and_aggregated as (
         avg(fct_market_daily.bid_ask_spread_pct) as avg_bid_ask_spread_pct
 
     from fct_market_daily
-
-    inner join dim_item
-        on fct_market_daily.item_name = dim_item.item_name
-        
     group by 1, 2
-
 )
 
 select * from joined_and_aggregated

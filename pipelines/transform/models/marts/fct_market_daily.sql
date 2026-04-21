@@ -27,6 +27,11 @@ int_item_price_history_daily as (
 joined as (
     select
         stg_items.item_name,
+        -- Add the dimension fields directly here:
+        stg_items.is_commodity,
+        stg_items.item_type,
+        stg_items.bucket_group_name,
+
         stg_items.ask_count,
         stg_items.ask_price_usd,
         stg_items.bid_price_usd,
