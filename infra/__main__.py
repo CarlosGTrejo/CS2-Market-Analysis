@@ -272,6 +272,7 @@ cloud_scheduler_job = gcp.cloudscheduler.Job(
     ),
 )
 
+pulumi.export("gcp_project", gcp_project)
 pulumi.export("gcs_bucket_url", bucket.url)
 pulumi.export("bq_dataset_name", bq_dataset.dataset_id)
 pulumi.export("pipeline_sa_email", pipeline_sa.email)
