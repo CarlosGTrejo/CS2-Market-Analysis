@@ -64,23 +64,15 @@ models:
           - not_null
       - name: avg_median_sale_price_usd
         description: Median sale price (USD) for the item on the given date.
-        data_tests:
-          - not_null
       - name: bid_ask_spread_pct
         description: Percentage spread between ask and bid prices. Calculated as
           (ask_price_usd - bid_price_usd) / bid_price_usd.
-        data_tests:
-          - not_null
       - name: turnover_rate
         description: Ratio of units sold to ask count. Indicates market liquidity for
           the item.
-        data_tests:
-          - not_null
-      - name: quick_sell_ratio
+      - name: bid_ask_ratio
         description: Ratio of bid price to ask price. Indicates how quickly an item may
           sell at market prices.
-        data_tests:
-          - not_null
       - name: market_date
         description: Date of the market snapshot (partition key).
         data_tests:

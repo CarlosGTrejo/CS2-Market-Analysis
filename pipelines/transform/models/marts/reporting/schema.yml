@@ -78,7 +78,7 @@ models:
       - name: turnover_rate
         description: The item's individual turnover rate (units sold / ask count).
         data_type: FLOAT
-      - name: quick_sell_ratio
+      - name: bid_ask_ratio
         description: >
           Ratio indicating buyers' interest. Calculated as
           stg_items.bid_price_usd / stg_items.ask_price_usd.

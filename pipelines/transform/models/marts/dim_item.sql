@@ -12,7 +12,7 @@ with stg_items as (
     from {{ ref('stg_items') }}
     
     {% if is_incremental() %}
-        where snapshot_date >= (select max(updated_at) from {{ this }})
+        where snapshot_date >= (select max(snapshot_date) from {{ this }})
     {% endif %}
 ),
 

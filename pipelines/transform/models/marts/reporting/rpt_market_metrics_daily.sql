@@ -36,11 +36,7 @@ aggregated_market_metrics as (
         sum(fct_market_daily.units_sold) as total_units_sold,
 
         -- Market Turnover Rate (Total Volume / Total Supply)
-        case
-            when sum(fct_market_daily.ask_count) > 0
-                then sum(fct_market_daily.units_sold) / sum(fct_market_daily.ask_count)
-            else null
-        end as market_turnover_rate,
+        safe_divide(sum(fct_market_daily.units_sold), sum(fct_market_daily.ask_count)) as market_turnover_rate,
 
         -- Market-wide Average Spread
         avg(fct_market_daily.bid_ask_spread_pct) as avg_bid_ask_spread_pct

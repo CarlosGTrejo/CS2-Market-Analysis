@@ -35,23 +35,11 @@ joined as (
         coalesce(int_item_price_history_daily.total_estimated_trade_volume_usd, 0) as total_estimated_trade_volume_usd,
         int_item_price_history_daily.avg_median_sale_price_usd,
 
-        case
-            when stg_items.bid_price_usd > 0
-                then (stg_items.ask_price_usd - stg_items.bid_price_usd) / stg_items.bid_price_usd
-            else null
-        end as bid_ask_spread_pct,
+        safe_divide(stg_items.ask_price_usd - stg_items.bid_price_usd, stg_items.bid_price_usd) as bid_ask_spread_pct,
 
-        case
-            when stg_items.ask_count > 0
-                then coalesce(int_item_price_history_daily.units_sold, 0) / stg_items.ask_count
-            else null
-        end as turnover_rate,
+        safe_divide(coalesce(int_item_price_history_daily.units_sold, 0), stg_items.ask_count) as turnover_rate,
 
-        case
-            when stg_items.ask_price_usd > 0
-                then stg_items.bid_price_usd / stg_items.ask_price_usd
-            else null
-        end as quick_sell_ratio,
+        safe_divide(stg_items.bid_price_usd, stg_items.ask_price_usd) as bid_ask_ratio,
 
         stg_items.snapshot_date as market_date
 

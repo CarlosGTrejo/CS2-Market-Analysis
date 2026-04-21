@@ -44,11 +44,7 @@ joined_and_aggregated as (
         sum(fct_market_daily.units_sold) as total_units_sold,
 
         -- Group Turnover Rate
-        case
-            when sum(fct_market_daily.ask_count) > 0
-                then sum(fct_market_daily.units_sold) / sum(fct_market_daily.ask_count)
-            else null
-        end as group_turnover_rate,
+        safe_divide(sum(fct_market_daily.units_sold), sum(fct_market_daily.ask_count)) as group_turnover_rate,
 
         avg(fct_market_daily.bid_ask_spread_pct) as avg_bid_ask_spread_pct
 

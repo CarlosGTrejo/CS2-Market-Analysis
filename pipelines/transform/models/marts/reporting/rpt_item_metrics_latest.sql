@@ -35,7 +35,7 @@ latest_item_metrics as (
         fct_market_daily.total_estimated_trade_volume_usd,
         fct_market_daily.bid_ask_spread_pct,
         fct_market_daily.turnover_rate,
-        fct_market_daily.quick_sell_ratio,
+        fct_market_daily.bid_ask_ratio,
 
         ---------- booleans
         dim_item.is_commodity,
