@@ -216,17 +216,23 @@ cloud_run_job = gcp.cloudrunv2.Job(
     template=gcp.cloudrunv2.JobTemplateArgs(
         template=gcp.cloudrunv2.JobTemplateTemplateArgs(
             service_account=pipeline_sa.email,
+            max_retries=0,
             containers=[
                 gcp.cloudrunv2.JobTemplateTemplateContainerArgs(
                     image=placeholder_image,
                     envs=envs,
+                    resources=gcp.cloudrunv2.JobTemplateTemplateContainerResourcesArgs(
+                        limits={
+                            "cpu": "2",
+                            "memory": "8Gi",  # Adjust memory up or down based on your data volume
+                        }
+                    ),
                 )
             ],
-            timeout="3600s",  # Give pipeline up to 1 Hour
+            timeout="9000s",
         )
     ),
-    # Ignore image changes so we can deploy the app independently via our deployment script
-    deletion_protection=is_prod,  # Allow destroy in dev, protect in prod
+    deletion_protection=is_prod,
     opts=pulumi.ResourceOptions(
         ignore_changes=["template.template.containers[0].image"]
     ),

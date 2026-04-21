@@ -7,12 +7,14 @@ from prefect_shell import ShellOperation
 
 from pipelines.extract_load.ingest_market_data import run_ingest
 
+FLOW_NAME = f"elt_market_data_{os.getenv('PULUMI_STACK', 'dev')}"
+
 
 @task(
     log_prints=True,
     retries=int(os.getenv("PREFECT_TASK_RETRIES", "3")),
     retry_delay_seconds=int(os.getenv("PREFECT_TASK_RETRY_DELAY", "60")),
-    timeout_seconds=int(os.getenv("PREFECT_TASK_TIMEOUT", "7200")),  # Default 2 hours
+    timeout_seconds=int(os.getenv("PREFECT_TASK_TIMEOUT", "9000")),  # Default 2.5 hours
 )
 def run_dlt_pipeline():
     """Extract and load market data using dlt."""
@@ -94,7 +96,7 @@ def deploy_dashboard():
     dashboard_dir = Path(__file__).parent.parent / "dashboard"
 
     with ShellOperation(
-        commands=["wrangler deploy"],
+        commands=["bunx wrangler deploy"],
         working_dir=dashboard_dir,
         stream_output=True,
     ) as shell_operation:
@@ -110,7 +112,7 @@ def deploy_dashboard():
     print("Dashboard deployment successful.")
 
 
-@flow(name="elt_market_data_flow", log_prints=True)
+@flow(name=FLOW_NAME, log_prints=True)
 def elt_market_data_flow():
     """Orchestrates the ELT process: dlt extract/load -> dbt transform."""
 
