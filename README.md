@@ -39,7 +39,7 @@ This makes it difficult to track long-term historical trends, evaluate skin valu
 This project addresses this data bottleneck by building an automated, cloud-native ELT pipeline.
 It extracts daily market data and price histories using proxy rotation to navigate API limits, normalizes the raw data into a Google Cloud Storage data lake, and models it within BigQuery. The final output is an interactive BI dashboard built with Observable Framework hosted on Cloudflare Workers, allowing users to explore market trends and insights.
 
-[![View Dashboard](https://img.shields.io/badge/%20-View%20Dashboard-2EA043?style=for-the-badge&logo=observable&logoColor=white)](https://your-dashboard-link-goes-here.com)
+[![View Dashboard](https://img.shields.io/badge/%20-View%20Dashboard-2EA043?style=for-the-badge&logo=observable&logoColor=white)](https://cs2-market-dashboard.carlos-guadarrama-trejo.workers.dev/)
 
 ## Architecture & Tech Stack
 
