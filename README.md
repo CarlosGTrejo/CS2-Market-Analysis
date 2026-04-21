@@ -1,13 +1,13 @@
 # CS2 Market Analysis ELT Pipeline
 
 ![Google Cloud Platform](https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare%20Workers-F48120?style=for-the-badge&logo=Cloudflare&logoColor=white)
 ![Pulumi](https://img.shields.io/badge/Pulumi-FFF?style=for-the-badge&logo=pulumi&logoColor=8a3391)
 ![Prefect](https://img.shields.io/badge/Prefect-000000?style=for-the-badge&logo=prefect&logoColor=white)
 ![dbt](https://img.shields.io/badge/dbt-FE6703?style=for-the-badge&logo=dbt&logoColor=white)
 ![dlt](https://img.shields.io/badge/dlt-181937?style=for-the-badge&logoColor=75c9e2)
 ![uv](https://img.shields.io/badge/uv-261230.svg?style=for-the-badge&logo=uv&logoColor=#de5fe9)
 ![Bun](https://img.shields.io/badge/Bun-111?style=for-the-badge&logo=bun&logoColor=fff)
-![Cloudflare Workers](https://img.shields.io/badge/Cloudflare%20Workers-F48120?style=for-the-badge&logo=Cloudflare&logoColor=white)
 
 An end-to-end, data engineering ELT pipeline for analyzing the CS2 market.
 
@@ -317,7 +317,7 @@ uv run --env-file .env pulumi up -C infra/
 AR_HOST="$(uv run pulumi stack output artifact_registry_url -C infra | cut -d/ -f1)"
 
 # For powershell:
-$AR_HOST = ((uv run pulumi stack output artifact_registry_url -C infra) -split '/')[0]
+# $AR_HOST = ((uv run pulumi stack output artifact_registry_url -C infra) -split '/')[0]
 
 gcloud auth configure-docker "$AR_HOST"
 
@@ -327,8 +327,20 @@ gcloud auth configure-docker "$AR_HOST"
 DOCKER_BUILDKIT=1 uv run --env-file .env flows/deploy.py
 
 # For Powershell:
-$env:DOCKER_BUILDKIT=1
-uv run --env-file .env flows/deploy.py
+# $env:DOCKER_BUILDKIT=1
+# uv run --env-file .env flows/deploy.py
+
+# Execute a run manually with:
+JOB_NAME="$(uv run pulumi stack output cloud_run_job_name -C infra)"
+JOB_REGION="$(uv run pulumi stack output cloud_run_job_location -C infra)"
+PROJECT_ID="$(gcloud config get-value project)"
+gcloud run jobs execute "$JOB_NAME" --region "$JOB_REGION" --project "$PROJECT_ID"
+
+# View the status of the job execution with:
+gcloud run jobs executions list --job "$JOB_NAME" --region "$JOB_REGION"
+
+# View the Prefect Cloud dashboard to monitor with:
+uv run --env-file .env prefect dashboard open
 ```
 
 ---
