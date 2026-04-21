@@ -96,7 +96,7 @@ def deploy_dashboard():
     dashboard_dir = Path(__file__).parent.parent / "dashboard"
 
     with ShellOperation(
-        commands=["bunx wrangler deploy"],
+        commands=["bun x wrangler deploy"],
         working_dir=dashboard_dir,
         stream_output=True,
     ) as shell_operation:
