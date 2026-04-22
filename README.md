@@ -264,10 +264,12 @@ Building an automated, serverless pipeline for 31,000+ items required balancing 
 - Accounts:
   - Google Cloud Project with Billing Enabled (free credits available)
     - Authentication configured (`gcloud auth application-default login`)
-    - Enable [Artifact Registry API](https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com)
-    - Enable [Secret Manager API](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com)
-    - Enable [Cloud Run API](https://console.cloud.google.com/apis/library/run.googleapis.com)
-    - Enable [Cloud Scheduler API](https://console.cloud.google.com/apis/library/cloudscheduler.googleapis.com)
+    - Enable the following APIs (for a quick command to enable all, skip to the setup steps below):
+      - [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com) (for pulumi to check regions, but not required)
+      - [Artifact Registry API](https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com)
+      - [Secret Manager API](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com)
+      - [Cloud Run API](https://console.cloud.google.com/apis/library/run.googleapis.com)
+      - [Cloud Scheduler API](https://console.cloud.google.com/apis/library/cloudscheduler.googleapis.com)
   - [Prefect Cloud](https://app.prefect.cloud/auth/sign-up) account (Free tier is sufficient)
   - [Pulumi Cloud](https://app.pulumi.com/signup) account (Free tier is sufficient)
   - [Webshare.io](https://www.webshare.io/?referral_code=1omcktoaxbhl) to avoid IP blocking and rate limits ($9/month for 3GB bandwidth is enough for 2 days of data extraction)
@@ -295,6 +297,15 @@ mise i
 #    use `gcloud config set project PROJECT_ID` to switch to the correct project
 gcloud init
 gcloud auth application-default login
+
+# 2b. Enable required APIs
+gcloud services enable \
+  compute.googleapis.com \
+  artifactregistry.googleapis.com \
+  secretmanager.googleapis.com \
+  run.googleapis.com \
+  cloudscheduler.googleapis.com \
+  --project=cs2-market-analytics-pipeline
 
 # 3. Fill in the specific API keys
 cp .env.example .env
@@ -333,8 +344,7 @@ DOCKER_BUILDKIT=1 uv run --env-file .env flows/deploy.py
 # Execute a run manually with:
 JOB_NAME="$(uv run pulumi stack output cloud_run_job_name -C infra)"
 JOB_REGION="$(uv run pulumi stack output cloud_run_job_location -C infra)"
-PROJECT_ID="$(gcloud config get-value project)"
-gcloud run jobs execute "$JOB_NAME" --region "$JOB_REGION" --project "$PROJECT_ID"
+gcloud run jobs execute "$JOB_NAME" --region "$JOB_REGION"
 
 # View the status of the job execution with:
 gcloud run jobs executions list --job "$JOB_NAME" --region "$JOB_REGION"
