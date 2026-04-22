@@ -4,7 +4,7 @@
     partition_by={
       "field": "market_date",
       "data_type": "date",
-      "granularity": "day"
+      "granularity": "month"
     },
     cluster_by=['item_name'],
     require_partition_filter=(target.name == 'prod') 

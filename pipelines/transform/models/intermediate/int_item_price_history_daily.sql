@@ -6,7 +6,7 @@
     partition_by={
       "field": "price_date",
       "data_type": "date",
-      "granularity": "day"
+      "granularity": "month"
     },
     cluster_by=['item_name']
 ) }}

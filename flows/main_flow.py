@@ -19,6 +19,10 @@ FLOW_NAME = f"elt_market_data_{os.getenv('PULUMI_STACK', 'dev')}"
 def run_dlt_pipeline():
     """Extract and load market data using dlt."""
     print("Starting dlt ingest pipeline...")
+    
+    # Increase dlt extract workers to leverage max_connections (250)
+    os.environ["EXTRACT__WORKERS"] = "100"
+    
     load_info = run_ingest()
     print(f"dlt pipeline completed: {load_info}")
     return load_info

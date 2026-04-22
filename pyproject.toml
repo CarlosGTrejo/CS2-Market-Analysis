@@ -10,6 +10,7 @@ dependencies = [
     "dlthub>=0.22.1",
     "google-cloud-bigquery-storage>=2.37.0",
     "google-cloud-storage>=3.1.1",
+    "orjson>=3.11.8",
     "prefect[dbt,shell]>=3.6.24",
 ]
 

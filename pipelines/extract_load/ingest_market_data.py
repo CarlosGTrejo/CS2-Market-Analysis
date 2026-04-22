@@ -1,16 +1,19 @@
-import json
+import logging
 import os
 import re
 from contextvars import ContextVar
 from datetime import datetime, timezone
-from typing import Annotated, Iterator, TypedDict
+from typing import Annotated, TypedDict
 from urllib.parse import quote
 
 import dlt
+import orjson as json  # drop in replacement, faster than built-in json and compatible with dlt's JSON handling
 from dlt.destinations.adapters import bigquery_adapter
 from dlt.sources.helpers import requests
 from dlt.sources.rest_api import rest_api_source
 from dlthub._runner.prefect_collector import PrefectCollector
+
+logger = logging.getLogger("dlt")
 
 STACK: str = os.getenv("PULUMI_STACK", "dev")
 BASE_URL = "https://steamcommunity.com/market/"
@@ -23,6 +26,7 @@ proxy_enabled_session = requests.Client(
     request_timeout=(5.0, 15.0),  # (connect_timeout, read_timeout)
     request_max_attempts=7,  # Increased to allow for resilient backoff on 429s (max 7 attempts)
     raise_for_status=False,  # Let dlt handle HTTP errors gracefully after max attempts
+    max_connections=250,  # Increase pool size to allow up to 250 concurrent requests
 ).session
 
 # Configure proxies on the session
@@ -84,7 +88,7 @@ items_data_source = rest_api_source(
             },
         ],
     },
-    name="ingest_cs2_items",
+    name="items",
 )
 
 
@@ -145,10 +149,10 @@ class PriceRecord(TypedDict):
 @dlt.transformer(
     name="item_price_history_raw",
     parallelized=True,  # Parallelize network-heavy scraping
-    write_disposition="merge",
+    write_disposition="append",  # We already track the last seen date, so we can safely append new records without deduplication
     primary_key=["market_hash_name", "date"],
 )
-def extract_median_price_sale_history(item) -> list[PriceRecord]:  # <-- Changed to list
+def extract_median_price_sale_history(item) -> list[PriceRecord]:
     """Extracts the median sale prices for a given market item"""
     market_hash_name = item.get("asset_description", {}).get("market_hash_name")
     if not market_hash_name:
@@ -202,7 +206,11 @@ def extract_median_price_sale_history(item) -> list[PriceRecord]:  # <-- Changed
                 return new_records
 
             except (json.JSONDecodeError, IndexError, ValueError) as e:
-                print(f"Error processing {market_hash_name}: {e}")
+                logger.error(f"Error processing {market_hash_name}: {e}")
+    else:  # Log non-200 responses for visibility.
+        logger.error(
+            f"Failed to fetch price history for {market_hash_name}. Status code: {response.status_code}"
+        )
 
     return []  # Ensure we always return a list, even on errors/misses
 
@@ -214,14 +222,14 @@ def run_ingest():
 
     if STACK != "prod":
         # Limit non-prod runs to 1 page (10 items) for testing and to avoid unnecessary API calls during development
-        items_data_source.resources["items_raw"].add_limit(1)
+        items_data_source.resources["items_raw"].add_limit(5)
         # Set progress to logging for non-prod to view detailed progress without throwing errors for PrefectCollector.
         PROGRESS = dlt.progress.log(dump_system_stats=False)
     else:
         PROGRESS = PrefectCollector()
 
     pipeline = dlt.pipeline(
-        pipeline_name="ingest_cs2_items",
+        pipeline_name=f"ingest_market_data_{STACK}",
         destination="bigquery",
         staging="filesystem",
         dataset_name=os.getenv("BQ_DATASET_NAME", f"cs2_market_dwh_{STACK}"),
@@ -231,8 +239,7 @@ def run_ingest():
     # Apply BigQuery-specific hints to transformer output
     item_price_history_configured = bigquery_adapter(
         extract_median_price_sale_history,
-        partition="date",
-        cluster=["market_hash_name"],
+        cluster=["market_hash_name", "date"],
     )
 
     data_to_load = [

@@ -434,6 +434,7 @@ dependencies = [
     { name = "dlthub" },
     { name = "google-cloud-bigquery-storage" },
     { name = "google-cloud-storage" },
+    { name = "orjson" },
     { name = "prefect", extra = ["dbt", "shell"] },
 ]
 
@@ -460,6 +461,7 @@ requires-dist = [
     { name = "dlthub", specifier = ">=0.22.1" },
     { name = "google-cloud-bigquery-storage", specifier = ">=2.37.0" },
     { name = "google-cloud-storage", specifier = ">=3.1.1" },
+    { name = "orjson", specifier = ">=3.11.8" },
     { name = "prefect", extras = ["dbt", "shell"], specifier = ">=3.6.24" },
 ]
 
