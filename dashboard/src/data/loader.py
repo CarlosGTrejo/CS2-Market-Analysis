@@ -15,11 +15,11 @@ def load_parquet(export_folder: str) -> None:
     Args:
         export_folder: The name of the export folder (e.g. 'item_group_summary')
     """
-    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    project = os.environ.get("GOOGLE_PROJECT")
     stack = os.environ.get("PULUMI_STACK", "dev")
 
     if not project:
-        print("GOOGLE_CLOUD_PROJECT environment variable is missing.", file=sys.stderr)
+        print("GOOGLE_PROJECT environment variable is missing.", file=sys.stderr)
         sys.exit(1)
 
     bucket_name = f"{project}-cs2-data-lake-{stack}"

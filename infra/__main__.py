@@ -4,10 +4,10 @@ import pulumi
 import pulumi_gcp as gcp
 from prefect.settings import PREFECT_API_KEY, PREFECT_API_URL
 
-region = os.getenv("GOOGLE_CLOUD_REGION")
+region = os.getenv("GOOGLE_REGION")
 if not region:
     raise ValueError(
-        "GOOGLE_CLOUD_REGION environment variable must be set. Add it to .env file.\n"
+        "GOOGLE_REGION environment variable must be set. Add it to .env file.\n"
         "Valid regions: https://docs.cloud.google.com/storage/docs/locations#location-r"
     )
 
@@ -151,11 +151,11 @@ envs = [
         value=prefect_api_url,
     ),
     gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
-        name="GOOGLE_CLOUD_PROJECT",
+        name="GOOGLE_PROJECT",
         value=gcp_project,
     ),
     gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
-        name="GOOGLE_CLOUD_REGION",
+        name="GOOGLE_REGION",
         value=region,
     ),
     gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(

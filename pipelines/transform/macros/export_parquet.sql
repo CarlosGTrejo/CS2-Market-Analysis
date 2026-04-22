@@ -1,5 +1,5 @@
 {% macro export_parquet() %}
-  {%- set project = env_var('GOOGLE_CLOUD_PROJECT') -%}
+  {%- set project = env_var('GOOGLE_PROJECT') -%}
   {%- set stack = env_var('PULUMI_STACK', 'dev') -%}
   {%- set bucket_name = project ~ "-cs2-data-lake-" ~ stack -%}
   

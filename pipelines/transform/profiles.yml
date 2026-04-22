@@ -4,9 +4,9 @@ cs2_market_analysis:
     dev:
       type: bigquery
       method: oauth
-      project: "{{ env_var('GOOGLE_CLOUD_PROJECT') }}"
+      project: "{{ env_var('GOOGLE_PROJECT') }}"
       dataset: "{{ env_var('BQ_DATASET_NAME', 'cs2_market_dwh_dev') }}"
-      location: "{{ env_var('GOOGLE_CLOUD_REGION') }}"
+      location: "{{ env_var('GOOGLE_REGION') }}"
       threads: 4
       priority: interactive
       timeout_seconds: 300
@@ -15,9 +15,9 @@ cs2_market_analysis:
     prod:
       type: bigquery
       method: oauth
-      project: "{{ env_var('GOOGLE_CLOUD_PROJECT') }}"
+      project: "{{ env_var('GOOGLE_PROJECT') }}"
       dataset: "{{ env_var('BQ_DATASET_NAME', 'cs2_market_dwh_prod') }}"
-      location: "{{ env_var('GOOGLE_CLOUD_REGION') }}"
+      location: "{{ env_var('GOOGLE_REGION') }}"
       threads: 4
       priority: batch
       timeout_seconds: 600

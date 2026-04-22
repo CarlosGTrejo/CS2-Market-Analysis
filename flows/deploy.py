@@ -1,9 +1,9 @@
 import os
 
-from python_on_whales import docker
-from python_on_whales.exceptions import DockerException
 from google.cloud import run_v2
 from pulumi import automation as auto
+from python_on_whales import docker
+from python_on_whales.exceptions import DockerException
 
 
 def get_pulumi_outputs(stack: str) -> dict[str, str]:
@@ -49,8 +49,8 @@ if __name__ == "__main__":
     cloud_run_job_name = pulumi_outputs.get("cloud_run_job_name")
     cloud_run_job_location = pulumi_outputs.get("cloud_run_job_location")
 
-    gcp_project = os.getenv("GOOGLE_CLOUD_PROJECT")
-    gcp_region = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
+    gcp_project = os.getenv("GOOGLE_PROJECT")
+    gcp_region = os.getenv("GOOGLE_REGION", "us-central1")
     image_tag = os.getenv("IMAGE_TAG", "rev-1")
 
     if not registry_url:
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     if not registry_url:
         raise ValueError("Artifact registry URL is missing.")
     if not gcp_project:
-        raise ValueError("GOOGLE_CLOUD_PROJECT is missing from your .env file.")
+        raise ValueError("GOOGLE_PROJECT is missing from your .env file.")
     if not cloud_run_job_name:
         raise ValueError("Cloud Run Job Name missing from Pulumi outputs.")
 
@@ -74,7 +74,9 @@ if __name__ == "__main__":
             pull=False,
         )
     except DockerException as e:
-        raise RuntimeError(f"Docker build failed for image '{full_image_url}'.\n{e}") from e
+        raise RuntimeError(
+            f"Docker build failed for image '{full_image_url}'.\n{e}"
+        ) from e
 
     print("Build successful.")
 
@@ -84,7 +86,9 @@ if __name__ == "__main__":
     try:
         docker.push(full_image_url)
     except DockerException as e:
-        raise RuntimeError(f"Docker push failed for image '{full_image_url}'.\n{e}") from e
+        raise RuntimeError(
+            f"Docker push failed for image '{full_image_url}'.\n{e}"
+        ) from e
 
     print("Push successful.")
 
