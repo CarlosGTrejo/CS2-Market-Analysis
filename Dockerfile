@@ -1,5 +1,5 @@
 # ==========================================
-# Stage 1: Python Builder (Unchanged)
+# Stage 1: Python Builder
 # ==========================================
 FROM ghcr.io/astral-sh/uv:0.11.6-python3.13-trixie-slim AS py-builder
 WORKDIR /app
@@ -20,6 +20,9 @@ COPY pipelines/ pipelines/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable
 
+# Resolve dbt dependencies in the builder stage
+RUN /app/.venv/bin/dbt deps --project-dir /app/pipelines/transform
+
 # ==========================================
 # Stage 2: JS Dependencies Cache
 # ==========================================
@@ -27,7 +30,7 @@ FROM oven/bun:latest AS js-builder
 WORKDIR /app/dashboard
 
 # Install deps, leveraging layer caching for fast rebuilds.
-COPY dashboard/package.json dashboard/bun.lockb* ./
+COPY dashboard/package.json dashboard/bun.lock* ./
 RUN bun install --frozen-lockfile
 
 # Copy the rest of the source code
@@ -56,10 +59,8 @@ COPY --from=py-builder /app/.venv /app/.venv
 # 3. Copy the dashboard (now contains source code + installed node_modules)
 COPY --from=js-builder /app/dashboard /app/dashboard
 
-# 4. Copy the Python application code last
+# 4. Copy the Python application code last (now includes downloaded dbt packages)
 COPY --from=py-builder /app/flows /app/flows
 COPY --from=py-builder /app/pipelines /app/pipelines
-
-RUN dbt deps --project-dir /app/pipelines/transform
 
 CMD ["python", "flows/main_flow.py"]
