@@ -21,7 +21,7 @@ export default {
 
   // The path to the source root.
   root: "src",
-  // If it's not working on windows, try using this:
+  // // If it's not working on windows, with local testing, try using this:
   // interpreters: {
   //   ".py": ["uv", "run"]
   // },

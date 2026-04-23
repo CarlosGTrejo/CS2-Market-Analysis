@@ -47,8 +47,6 @@ INTO
   VALUE value
 ```
 
-## USE A TEXT PLOT TO SHOW A MESSAGE INSTEAD OF THE BLANK CHART
-
 ```js
 // A non-reactive Map to safely hold selections across re-renders
 const selectionMap = new Map();

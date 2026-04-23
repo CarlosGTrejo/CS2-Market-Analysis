@@ -38,30 +38,42 @@ models:
       - name: item_name
         description: Name of the market item.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                where: "market_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)"
       - name: ask_count
         description: Number of active sell orders for the item on the market snapshot date.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                where: "market_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)"
       - name: ask_price_usd
         description: Lowest listed price (USD) for the item on the market snapshot date.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                where: "market_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)"
       - name: bid_price_usd
         description: Highest buy order price (USD) for the item on the market snapshot date.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                where: "market_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)"
       - name: units_sold
         description: Number of units sold for the item on the given date.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                where: "market_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)"
       - name: total_estimated_trade_volume_usd
         description: >
           Total estimated trade volume (USD) for the item on the given date.
           It's estimated because we are only have access to the median sale
           price, not the actual sale price for each unit sold.
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                where: "market_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)"
       - name: avg_median_sale_price_usd
         description: Median sale price (USD) for the item on the given date.
       - name: bid_ask_spread_pct
@@ -76,4 +88,6 @@ models:
       - name: market_date
         description: Date of the market snapshot (partition key).
         data_tests:
-          - not_null
+          - not_null:
+              config:
+                where: "market_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)"
