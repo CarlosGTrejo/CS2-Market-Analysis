@@ -54,6 +54,15 @@ bq_dataset = gcp.bigquery.Dataset(
     delete_contents_on_destroy=not is_prod,  # Allow dataset deletion in dev, protect in prod
 )
 
+# dlt also needs a "staging" dataset:
+bq_staging_dataset = gcp.bigquery.Dataset(
+    "cs2_market_dwh_staging",
+    dataset_id=f"cs2_market_dwh_{stack}_staging",
+    location=region,
+    delete_contents_on_destroy=not is_prod,  # Allow dataset deletion in dev, protect in prod
+)
+
+
 # 4. Create a dedicated Service Account for the pipeline
 pipeline_sa = gcp.serviceaccount.Account(
     "pipeline-runner-sa",
