@@ -14,15 +14,16 @@ FLOW_NAME = f"elt_market_data_{os.getenv('PULUMI_STACK', 'dev')}"
     log_prints=True,
     retries=int(os.getenv("PREFECT_TASK_RETRIES", "3")),
     retry_delay_seconds=int(os.getenv("PREFECT_TASK_RETRY_DELAY", "60")),
-    timeout_seconds=int(os.getenv("PREFECT_TASK_TIMEOUT", "9000")),  # Default 2.5 hours
+    timeout_seconds=int(os.getenv("PREFECT_TASK_TIMEOUT", "14400")),  # 4 hours
 )
 def run_dlt_pipeline():
     """Extract and load market data using dlt."""
     print("Starting dlt ingest pipeline...")
-    
-    # Increase dlt extract workers to leverage max_connections (250)
-    os.environ["EXTRACT__WORKERS"] = "100"
-    
+
+    os.environ["EXTRACT__WORKERS"] = "50"
+    os.environ["EXTRACT__MAX_PARALLEL_ITEMS"] = "60"
+    os.environ["NORMALIZE__WORKERS"] = "6"
+
     load_info = run_ingest()
     print(f"dlt pipeline completed: {load_info}")
     return load_info
@@ -91,6 +92,7 @@ def build_dashboard():
         wasm_path.unlink()
 
     print("Dashboard build successful.")
+    return True
 
 
 @task(log_prints=True)
@@ -114,8 +116,10 @@ def deploy_dashboard():
             raise RuntimeError(
                 f"Dashboard deployment failed with exit code {process.return_code}:\n{output}"
             )
+            return False
         else:
             print("Dashboard deployment successful.")
+        return True
 
 
 @flow(name=FLOW_NAME, log_prints=True)

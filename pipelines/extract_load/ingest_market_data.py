@@ -25,8 +25,8 @@ PRICE_HISTORY_REGEX = re.compile(r"var line1=([^;]+);")
 proxy_enabled_session = requests.Client(
     request_timeout=(5.0, 15.0),  # (connect_timeout, read_timeout)
     request_max_attempts=7,  # Increased to allow for resilient backoff on 429s (max 7 attempts)
-    raise_for_status=False,  # Let dlt handle HTTP errors gracefully after max attempts
-    max_connections=250,  # Increase pool size to allow up to 250 concurrent requests
+    raise_for_status=False,
+    max_connections=60,  # Increase pool size to allow up to 60 concurrent connections
 ).session
 
 # Configure proxies on the session
@@ -207,11 +207,22 @@ def extract_median_price_sale_history(item) -> list[PriceRecord]:
 
             except (json.JSONDecodeError, IndexError, ValueError) as e:
                 logger.error(f"Error processing {market_hash_name}: {e}")
-    else:  # Log non-200 responses for visibility.
+    elif response.status_code == 429:
+        logger.error(
+            f"Rate limited (429) fetching {market_hash_name} after all retries exhausted."
+        )
+    elif response.status_code == 403:
+        logger.error(
+            f"Access forbidden (403) for {market_hash_name}. The proxy may be blocked."
+        )
+    elif response.status_code == 404:
+        logger.warning(
+            f"Item not found (404) for {market_hash_name}. It may have been removed."
+        )
+    else:
         logger.error(
             f"Failed to fetch price history for {market_hash_name}. Status code: {response.status_code}"
         )
-
     return []  # Ensure we always return a list, even on errors/misses
 
 
@@ -221,8 +232,8 @@ def run_ingest():
     GLOBAL_SNAPSHOT_TIMESTAMP.set(datetime.now(timezone.utc))
 
     if STACK != "prod":
-        # Limit non-prod runs to 1 page (10 items) for testing and to avoid unnecessary API calls during development
-        items_data_source.resources["items_raw"].add_limit(5)
+        # Limit non-prod runs to 10 pages (100 items) for testing and to avoid unnecessary API calls during development
+        items_data_source.resources["items_raw"].add_limit(10)
         # Set progress to logging for non-prod to view detailed progress without throwing errors for PrefectCollector.
         PROGRESS = dlt.progress.log(dump_system_stats=False)
     else:

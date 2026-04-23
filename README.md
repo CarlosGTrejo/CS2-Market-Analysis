@@ -16,18 +16,18 @@ An end-to-end, data engineering ELT pipeline for analyzing the CS2 market.
 <details open>
 <summary>Table of Contents</summary>
 
-- [Problem Statement](#problem-statement)
-- [Architecture & Tech Stack](#architecture--tech-stack)
-- [Technical Decisions & Trade-Offs](#technical-decisions--trade-offs)
-- [Quick Start (Frictionless Deployment)](#quick-start)
-- [Project Structure](#project-structure)
-- [Future Improvements](#future-improvements)
+1. [Problem Statement](#1-problem-statement)
+2. [Architecture & Tech Stack](#2-architecture--tech-stack)
+3. [Technical Decisions & Trade-Offs](#3-technical-decisions--trade-offs)
+4. [Quick Start (Frictionless Deployment)](#4-quick-start)
+5. [Project Structure](#5-project-structure)
+6. [Future Improvements](#6-future-improvements)
 
 </details>
 
 ---
 
-## Problem Statement
+## 1. Problem Statement
 
 The Counter-Strike 2 (CS2) virtual item market is a highly dynamic economy, with
 thousands of item prices fluctuating daily based on supply, demand, and game updates.
@@ -41,7 +41,7 @@ It extracts daily market data and price histories using proxy rotation to naviga
 
 [![View Dashboard](https://img.shields.io/badge/%20-View%20Dashboard-2EA043?style=for-the-badge&logo=observable&logoColor=white)](https://cs2-market-dashboard.carlos-guadarrama-trejo.workers.dev/)
 
-## Architecture & Tech Stack
+## 2. Architecture & Tech Stack
 
 This project uses the following stack:
 
@@ -236,7 +236,7 @@ flowchart LR
 
 ---
 
-## Technical Decisions & Trade-Offs
+## 3. Technical Decisions & Trade-Offs
 
 Building an automated, serverless pipeline for 31,000+ items required balancing performance, security, and observability. Here are the key architectural decisions made during development:
 
@@ -258,7 +258,8 @@ Building an automated, serverless pipeline for 31,000+ items required balancing 
 
 ---
 
-## Quick Start
+## 4. Quick Start
+
 ### 1. Prerequisites
 
 - Accounts:
@@ -338,16 +339,25 @@ gcloud auth configure-docker "$AR_HOST"
 DOCKER_BUILDKIT=1 uv run --env-file .env flows/deploy.py
 
 # For Powershell:
-# $env:DOCKER_BUILDKIT=1
-# uv run --env-file .env flows/deploy.py
+# $env:DOCKER_BUILDKIT=1; uv run --env-file .env flows/deploy.py
+
 
 # Execute a run manually with:
 JOB_NAME="$(uv run pulumi stack output cloud_run_job_name -C infra)"
 JOB_REGION="$(uv run pulumi stack output cloud_run_job_location -C infra)"
 gcloud run jobs execute "$JOB_NAME" --region "$JOB_REGION"
 
+# For Powershell:
+# $JOB_NAME = $(uv run pulumi stack output cloud_run_job_name -C infra)
+# $JOB_REGION = $(uv run pulumi stack output cloud_run_job_location -C infra)
+# gcloud run jobs execute $JOB_NAME --region $JOB_REGION
+
+
 # View the status of the job execution with:
 gcloud run jobs executions list --job "$JOB_NAME" --region "$JOB_REGION"
+
+# For Powershell:
+# gcloud run jobs executions list --job $JOB_NAME --region $JOB_REGION
 
 # View the Prefect Cloud dashboard to monitor with:
 uv run --env-file .env prefect dashboard open
@@ -355,7 +365,7 @@ uv run --env-file .env prefect dashboard open
 
 ---
 
-## Project Structure
+## 5. Project Structure
 
 ```
 CS2-Market-Analysis/
@@ -399,7 +409,7 @@ CS2-Market-Analysis/
 
 ---
 
-## Future Improvements
+## 6. Future Improvements
 
 - Use CI/CD (GitHub Actions) to automate deployments on code changes
 - Improve image tag management for traceability and rollback
