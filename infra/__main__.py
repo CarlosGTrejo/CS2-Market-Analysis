@@ -21,7 +21,12 @@ if not cloudflare_account_id or not cloudflare_api_token:
 
 gcp_project = pulumi.Config("gcp").get("project") or gcp.config.project
 stack = pulumi.get_stack()
-is_prod = stack == "prod"
+is_prod = stack == "prod"  # Safety switch to prevent destructive actions in prod
+
+# dev/prod resource configs
+CLOUD_RUN_CPU = "2" if stack == "prod" else "1"
+CLOUD_RUN_MEMORY = "4Gi" if stack == "prod" else "1Gi"
+SCHEDULER_CRON = "0 5 * * *" if stack == "prod" else "0 0 * * *"  # 5 hours apart
 
 # 1. Create a GCS Bucket for dlt data lake
 bucket = gcp.storage.Bucket(
@@ -223,13 +228,13 @@ cloud_run_job = gcp.cloudrunv2.Job(
                     envs=envs,
                     resources=gcp.cloudrunv2.JobTemplateTemplateContainerResourcesArgs(
                         limits={
-                            "cpu": "2",
-                            "memory": "8Gi",  # Adjust memory up or down based on your data volume
+                            "cpu": CLOUD_RUN_CPU,
+                            "memory": CLOUD_RUN_MEMORY,  # Adjust memory up or down based on your data volume
                         }
                     ),
                 )
             ],
-            timeout="10800s",
+            timeout="28800s",  # 8 hours
         )
     ),
     deletion_protection=is_prod,
@@ -261,7 +266,7 @@ cloud_scheduler_job = gcp.cloudscheduler.Job(
     "cs2-elt-scheduler",
     name=f"cs2-elt-schedule-{stack}",
     region=scheduler_region,
-    schedule="0 0 * * *",
+    schedule=SCHEDULER_CRON,
     time_zone="UTC",
     http_target=gcp.cloudscheduler.JobHttpTargetArgs(
         http_method="POST",
