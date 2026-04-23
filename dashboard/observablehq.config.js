@@ -21,6 +21,10 @@ export default {
 
   // The path to the source root.
   root: "src",
+  // If it's not working on windows, try using this:
+  // interpreters: {
+  //   ".py": ["uv", "run"]
+  // },
 
   // Some additional configuration options and their defaults:
   // theme: "default", // try "light", "dark", "slate", etc.
