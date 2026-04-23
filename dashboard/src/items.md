@@ -19,7 +19,7 @@ SELECT
   total_estimated_trade_volume_usd::DOUBLE AS total_estimated_trade_volume_usd,
   bid_ask_spread_pct::DOUBLE AS bid_ask_spread_pct,
   turnover_rate,
-  quick_sell_ratio::DOUBLE AS quick_sell_ratio,
+  bid_ask_ratio::DOUBLE AS bid_ask_ratio,
   is_commodity,
   market_date
 FROM rpt_item_metrics_latest
@@ -150,7 +150,7 @@ const itemsTable = view(Inputs.table(searchItems, {
       "units_sold",
       "total_estimated_trade_volume_usd",
       "turnover_rate",
-      "quick_sell_ratio",
+      "bid_ask_ratio",
     ],
     header: {
       item_name: "Item Name",
@@ -161,13 +161,13 @@ const itemsTable = view(Inputs.table(searchItems, {
       bid_ask_spread_pct: "Bid-Ask Spread (%)",
       total_estimated_trade_volume_usd: "Total Est. Trade Volume (USD)",
       turnover_rate: "Turnover Rate",
-      quick_sell_ratio: "Quick Sell Ratio",
+      bid_ask_ratio: "Bid-Ask Ratio",
     },
     format: {
       ask_price_usd: (d) => d == null ? "N/A" : `$${Number(d).toFixed(2)}`,
       bid_price_usd: (d) => d == null ? "N/A" : `$${Number(d).toFixed(2)}`,
       total_estimated_trade_volume_usd: (d) => d == null ? "N/A" : `$${Number(d).toFixed(2)}`,
-      quick_sell_ratio: (d) => d == null ? "N/A" : Number(d).toFixed(2),
+      bid_ask_ratio: (d) => d == null ? "N/A" : Number(d).toFixed(2),
       ask_count: (d) => d == null ? "N/A" : d,
       units_sold: (d) => d == null ? "N/A" : d,
       turnover_rate: (d) => d == null ? "N/A" : Number(d).toFixed(2),
