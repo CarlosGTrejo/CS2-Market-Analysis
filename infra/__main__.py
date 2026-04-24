@@ -1,23 +1,35 @@
-import os
-
 import pulumi
 import pulumi_gcp as gcp
 from prefect.settings import PREFECT_API_KEY, PREFECT_API_URL
+from preflight import check_env
 
-region = os.getenv("GOOGLE_REGION")
-if not region:
-    raise ValueError(
-        "GOOGLE_REGION environment variable must be set. Add it to .env file.\n"
-        "Valid regions: https://docs.cloud.google.com/storage/docs/locations#location-r"
-    )
+env = check_env(
+    required_vars=[
+        (
+            "GOOGLE_REGION",
+            "GOOGLE_REGION must be set. \n    Valid regions: https://docs.cloud.google.com/storage/docs/locations#location-r",
+        ),
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_API_TOKEN",
+        (
+            "PROXY_URL",
+            "PROXY_URL is not set. This is required to avoid rate limits.",
+        ),
+    ],
+    optional_vars=[
+        (
+            "GOOGLE_CLOUD_SCHEDULER_REGION",
+            "GOOGLE_CLOUD_SCHEDULER_REGION is not set, `GOOGLE_REGION` will be used instead. \n    Valid regions: https://docs.cloud.google.com/scheduler/docs/locations",
+        ),
+    ],
+)
 
-cloudflare_account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID")
-cloudflare_api_token = os.getenv("CLOUDFLARE_API_TOKEN")
 
-if not cloudflare_account_id or not cloudflare_api_token:
-    raise ValueError(
-        "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN must be set in your .env file."
-    )
+region = env["GOOGLE_REGION"]
+scheduler_region = env.get("GOOGLE_CLOUD_SCHEDULER_REGION", region)
+cloudflare_account_id = env["CLOUDFLARE_ACCOUNT_ID"]
+cloudflare_api_token = env["CLOUDFLARE_API_TOKEN"]
+proxy_url = env["PROXY_URL"]
 
 gcp_project = pulumi.Config("gcp").get("project") or gcp.config.project
 stack = pulumi.get_stack()
@@ -186,7 +198,7 @@ envs = [
     ),
     gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
         name="PROXY_URL",
-        value=os.getenv("PROXY_URL", ""),
+        value=proxy_url,
     ),
     gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
         name="PULUMI_STACK",
@@ -253,7 +265,6 @@ cloud_run_job = gcp.cloudrunv2.Job(
 )
 
 # 8. Cloud Scheduler Job
-scheduler_region = os.getenv("GOOGLE_CLOUD_SCHEDULER_REGION") or region
 scheduler_sa = gcp.serviceaccount.Account(
     "scheduler-sa",
     account_id=f"scheduler-{stack}",

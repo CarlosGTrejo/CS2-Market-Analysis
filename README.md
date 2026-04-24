@@ -8,22 +8,23 @@
 ![dlt](https://img.shields.io/badge/dlt-181937?style=for-the-badge&logoColor=75c9e2)
 ![uv](https://img.shields.io/badge/uv-261230.svg?style=for-the-badge&logo=uv&logoColor=#de5fe9)
 ![Bun](https://img.shields.io/badge/Bun-111?style=for-the-badge&logo=bun&logoColor=fff)
+![Observable Framework](https://img.shields.io/badge/Observable_Framework-000000?style=for-the-badge&logo=observable&logoColor=white)
 
 An end-to-end, data engineering ELT pipeline for analyzing the CS2 market.
 
+[![View Dashboard](https://img.shields.io/badge/%20-View%20Dashboard-2EA043?style=for-the-badge&logo=observable&logoColor=white)](https://cs2-market-dashboard.carlos-guadarrama-trejo.workers.dev/)
+
 ---
 
-<details open>
-<summary>Table of Contents</summary>
+Table of Contents
 
 1. [Problem Statement](#1-problem-statement)
-2. [Architecture & Tech Stack](#2-architecture--tech-stack)
-3. [Technical Decisions & Trade-Offs](#3-technical-decisions--trade-offs)
-4. [Quick Start (Frictionless Deployment)](#4-quick-start)
-5. [Project Structure](#5-project-structure)
+2. [Quick Start](#2-quick-start)
+3. [Architecture & Tech Stack](#3-architecture--tech-stack)
+4. [Project Structure](#4-project-structure)
+5. [Technical Decisions & Trade-Offs](#5-technical-decisions--trade-offs)
 6. [Future Improvements](#6-future-improvements)
-
-</details>
+7. [Resources & References](#7-resources--references)
 
 ---
 
@@ -39,9 +40,167 @@ This makes it difficult to track long-term historical trends, evaluate skin valu
 This project addresses this data bottleneck by building an automated, cloud-native ELT pipeline.
 It extracts daily market data and price histories using proxy rotation to navigate API limits, normalizes the raw data into a Google Cloud Storage data lake, and models it within BigQuery. The final output is an interactive BI dashboard built with Observable Framework hosted on Cloudflare Workers, allowing users to explore market trends and insights.
 
-[![View Dashboard](https://img.shields.io/badge/%20-View%20Dashboard-2EA043?style=for-the-badge&logo=observable&logoColor=white)](https://cs2-market-dashboard.carlos-guadarrama-trejo.workers.dev/)
+---
 
-## 2. Architecture & Tech Stack
+## 2. Quick Start
+
+### 2.1. Prerequisites
+
+- Accounts:
+  - Google Cloud Project with Billing Enabled (free credits available)
+    - Enable the following APIs (for a quick command to enable all, skip to the setup steps below):
+      - [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com) (for pulumi to check regions, but not required)
+      - [Artifact Registry API](https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com)
+      - [Secret Manager API](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com)
+      - [Cloud Run API](https://console.cloud.google.com/apis/library/run.googleapis.com)
+      - [Cloud Scheduler API](https://console.cloud.google.com/apis/library/cloudscheduler.googleapis.com)
+  - [Prefect Cloud](https://app.prefect.cloud/auth/sign-up) account (Free tier is sufficient)
+  - [Pulumi Cloud](https://app.pulumi.com/signup) account (Free tier is sufficient)
+  - [Webshare.io](https://www.webshare.io/?referral_code=1omcktoaxbhl) to avoid IP blocking and rate limits ($9/month for 3GB bandwidth is enough for 2 days of data extraction)
+  - [Cloudflare](https://dash.cloudflare.com/sign-up) account to deploy the dashboard (free tier is sufficient)
+- Tools:
+  - [git](https://git-scm.com/install/) for cloning the repo
+  - [mise](https://mise.jdx.dev/) for installing the necessary tools (if using bash shell install with `curl https://mise.run/bash | sh`)
+    - Google Cloud CLI (`gcloud`) for authentication
+    - Pulumi CLI for provisioning infrastructure
+  - [uv](https://docs.astral.sh/uv/getting-started/installation)
+  - [Docker](https://docs.docker.com/engine/install/)
+
+### 2.2. Setup & Running the pipeline
+
+<details>
+<summary><b>Bash / Zsh</b> (Click to expand)</summary>
+
+```bash
+# 1. Get the code
+git clone https://github.com/CarlosGTrejo/CS2-Market-Analysis.git
+cd CS2-Market-Analysis
+
+# 2. Use mise to install gcloud and pulumi
+mise i
+
+# 3. Authenticate local machine with Google Cloud
+#    if you have already initialized gcloud and have muliple projects
+#    use `gcloud config set project PROJECT_ID` to switch to the correct project
+gcloud init
+gcloud auth application-default login
+
+# 4. Enable required APIs
+gcloud services enable \
+  compute.googleapis.com \
+  artifactregistry.googleapis.com \
+  secretmanager.googleapis.com \
+  run.googleapis.com \
+  cloudscheduler.googleapis.com \
+
+# 5. Fill in the specific API keys
+cp .env.example .env
+nano .env
+
+# 6. Install python dependencies
+uv sync --locked
+
+# 7. Authenticate with Pulumi
+pulumi login
+
+# 8. Authenticate with Prefect Cloud (follow interactive prompts)
+uv run prefect cloud login
+
+# 9. Stand up the GCP infrastructure (GCS, BigQuery, Artifact Registry, Cloud Run Job, Cloud Scheduler)
+# (Pulumi will automatically use the gcloud credentials from step 3)
+uv run --env-file .env pulumi up -C infra/
+
+# 10. Configure Docker auth for the Artifact Registry host created by infra
+AR_HOST="$(uv run pulumi stack output artifact_registry_url -C infra | cut -d/ -f1)"
+gcloud auth configure-docker "$AR_HOST"
+
+# 11. Build, push, and deploy the Docker image to Cloud Run
+# (The deployment script builds the Docker image, pushes it to Artifact Registry, and updates the Cloud Run Job to use the new image)
+# Requires a reachable Docker daemon and a BuildKit-capable builder.
+DOCKER_BUILDKIT=1 uv run --env-file .env flows/deploy.py
+
+# Wait until 05:00 UTC for the scheduled run to execute or run manually with:
+JOB_NAME="$(uv run pulumi stack output cloud_run_job_name -C infra)"
+JOB_REGION="$(uv run pulumi stack output cloud_run_job_location -C infra)"
+gcloud run jobs execute "$JOB_NAME" --region "$JOB_REGION"
+
+# View the status of the job execution with:
+gcloud run jobs executions list --job "$JOB_NAME" --region "$JOB_REGION"
+
+# View the Prefect dashboard for real-time observability of flow runs, task runs, logs, and retries:
+uv run prefect dashboard open
+```
+
+</details>
+
+
+<details>
+<summary><b>PowerShell</b> (Click to expand)</summary>
+
+```powershell
+# 1. Get the code
+git clone https://github.com/CarlosGTrejo/CS2-Market-Analysis.git
+cd CS2-Market-Analysis
+
+# 2. Use mise to install gcloud and pulumi
+mise i
+
+# 3. Authenticate local machine with Google Cloud
+#    if you have already initialized gcloud and have muliple projects
+#    use `gcloud config set project PROJECT_ID` to switch to the correct project
+gcloud init
+gcloud auth application-default login
+
+# 4. Enable required APIs
+gcloud services enable `
+  compute.googleapis.com `
+  artifactregistry.googleapis.com `
+  secretmanager.googleapis.com `
+  run.googleapis.com `
+  cloudscheduler.googleapis.com `
+
+# 5. Fill in the specific API keys
+cp .env.example .env
+nano .env
+
+# 6. Install python dependencies
+uv sync --locked
+
+# 7. Authenticate with Pulumi
+pulumi login
+
+# 8. Authenticate with Prefect Cloud (follow interactive prompts)
+uv run prefect cloud login
+
+# 9. Stand up the GCP infrastructure (GCS, BigQuery, Artifact Registry, Cloud Run Job, Cloud Scheduler)
+# (Pulumi will automatically use the gcloud credentials from step 3)
+uv run --env-file .env pulumi up -C infra/
+
+# 10. Configure Docker auth for the Artifact Registry host created by infra
+$AR_HOST = ((uv run pulumi stack output artifact_registry_url -C infra) -split '/')[0]
+gcloud auth configure-docker $AR_HOST
+
+# 11. Build, push, and deploy the Docker image to Cloud Run
+$env:DOCKER_BUILDKIT="1"
+uv run --env-file .env flows/deploy.py
+
+# Wait until 05:00 UTC for the scheduled run to execute or run manually with:
+$JOB_NAME = $(uv run pulumi stack output cloud_run_job_name -C infra)
+$JOB_REGION = $(uv run pulumi stack output cloud_run_job_location -C infra)
+gcloud run jobs execute $JOB_NAME --region $JOB_REGION
+
+# View the status of the job execution with:
+gcloud run jobs executions list --job $JOB_NAME --region $JOB_REGION
+
+# View the Prefect dashboard for real-time observability of flow runs, task runs, logs, and retries:
+uv run prefect dashboard open
+```
+
+</details>
+
+---
+
+## 3. Architecture & Tech Stack
 
 This project uses the following stack:
 
@@ -67,7 +226,6 @@ This project uses the following stack:
 * **BI Dashboard** | [Observable Framework](https://observablehq.com/framework/)
 * **Dashboard Hosting** | [Cloudflare Workers](https://workers.cloudflare.com/)
 
-
 ```mermaid
 ---
 config:
@@ -82,6 +240,7 @@ flowchart LR
     %% External Data Sources
     steam_market["Steam Market"]@{ shape: rect }
     proxy_server["Proxy"]@{ shape: rect }
+    prefect_dashboard["Prefect Dashboard"]@{ shape: rect }
 
     %% Google Cloud Environment
     subgraph gcp_cloud["`**Google Cloud Platform**`"]
@@ -165,6 +324,8 @@ flowchart LR
     secret_manager -. "Injects" .-> cloud_run_env
     task_transform -. "Orchestrates" .-> bigquery_dw
 
+    %% --- Prefect Dashboard Connection (Index 18) ---
+    prefect_orchestration <--> prefect_dashboard
 
     %% ========================================================
     %% 3. STYLING & CLASSES
@@ -208,164 +369,26 @@ flowchart LR
     class bq_staging,bq_intermediate,bq_marts,bq_reporting,bq_raw bqNode;
     class raw_data_gcs,parquet_export gcsNode;
     class task_extract_load,task_transform,task_build,task_deploy computeNode;
-    class steam_market,proxy_server,observable_dashboard edgeNode;
+    class steam_market,proxy_server,observable_dashboard,prefect_dashboard edgeNode;
     
     class secret_manager secretManagerStyle;
     class cloud_scheduler cloudSchedulerStyle;
     class artifact_registry artifactRegistryStyle;
     
     %% --- Link Styles ---
-    %% Default all non-data lines to a softer grey
-    linkStyle default stroke:#9AA0A6,stroke-width:1.5px,fill:none;
+    %% Explicitly style remaining uncolored links (Indexes 14 through 18) to avoid arrowhead override bugs
+    linkStyle 14,15,16,17,18 stroke:#9E339F,stroke-width:1.5px,fill:none;
     
     %% Primary Animated Data Path (Indexes 0 through 10) - Vibrant Green & Thicker
     linkStyle 0,1,2,3,4,5,6,7,8,9,10 stroke:#0F9D58,stroke-width:2.5px,fill:none;
     
     %% Prefect Internal Flow Path (Indexes 11 through 13) - Blue & Dashed
     linkStyle 11,12,13 stroke:#4285F4,stroke-width:2.5px,fill:none,stroke-dasharray:5 5;
-    %% --- Link Styles ---
-    %% Default all non-data lines to a softer grey
-    linkStyle default stroke:#333,stroke-width:1.5px;
-    
-    %% Primary Animated Data Path (Indexes 0 through 10) - Vibrant Green & Thicker
-    linkStyle 0,1,2,3,4,5,6,7,8,9,10 stroke:#0F9D58,stroke-width:2.5px;
-    
-    %% Prefect Internal Flow Path (Indexes 11 through 13) - Blue & Dashed
-    linkStyle 11,12,13 stroke:#4285F4,stroke-width:2.5px;
 ```
 
 ---
 
-## 3. Technical Decisions & Trade-Offs
-
-Building an automated, serverless pipeline for 31,000+ items required balancing performance, security, and observability. Here are the key architectural decisions made during development:
-
-### 1. Navigating Rate Limits and Scale (dlt + Proxies)
-* **The Challenge:** Steam's REST APIs are heavily paginated and enforce strict rate limits, making it difficult to extract the entire 31,000+ item catalog reliably.
-* **The Solution:** The extraction phase utilizes `dlt`'s built-in REST API paginator mapped to the `total_count` response, paired with a custom `requests` session. By injecting Webshare.io rotating proxies into the session and suppressing default HTTP error handling, the pipeline gracefully navigates rate limits without dropping connections or requiring complex custom backoff logic.
-
-### 2. Keyless Authentication via ADC (Security & DX)
-* **The Challenge:** Managing static JSON Service Account keys across multiple tools (Pulumi, Prefect, dlt, dbt) creates friction, security vulnerabilities, and deployment headaches.
-* **The Solution:** The project implements a frictionless, "keyless" design using Google Cloud's Application Default Credentials (ADC). 
-    * Locally, tools read the user's short-lived `gcloud` token via a single `.env` file. 
-    * In production, Pulumi provisions a dedicated Service Account and attaches it directly to the Cloud Run compute instance. 
-    * By configuring dbt to use `method: oauth` and leaving `dlt`'s destination credentials empty, the tools implicitly inherit permissions from the compute environment via the GCP Metadata Server. Zero manual JSON keys are handled by the user.
-
-### 3. Prioritizing Observability Over Micro-Optimizations (Prefect + dbt Core)
-* **The Challenge:** Integrating dbt transformations with ingestion (`dlt`) and orchestration (`Prefect`) presented multiple paths: using dlt's native dbt runner, switching to dbt Fusion for raw speed, or treating dbt as first-class Prefect tasks.
-* **The Solution:** After initial friction with recurring installation and dependency issues in other orchestrators like Bruin, the pipeline was standardized on Prefect. `prefect-dbt` was chosen to execute standard dbt Core inside the Cloud Run container. 
-    * *Trade-off:* While `dlt`'s runner or `dbt Fusion` could marginally improve execution speed or simplify setup, the pipeline is highly network-bound during the extraction phase, not the transformation phase. Therefore, micro-optimizing dbt execution speed was not worth sacrificing the granular retries, lineage tracking, and UI observability that `prefect-dbt` provides when a specific model fails.
-
----
-
-## 4. Quick Start
-
-### 1. Prerequisites
-
-- Accounts:
-  - Google Cloud Project with Billing Enabled (free credits available)
-    - Authentication configured (`gcloud auth application-default login`)
-    - Enable the following APIs (for a quick command to enable all, skip to the setup steps below):
-      - [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com) (for pulumi to check regions, but not required)
-      - [Artifact Registry API](https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com)
-      - [Secret Manager API](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com)
-      - [Cloud Run API](https://console.cloud.google.com/apis/library/run.googleapis.com)
-      - [Cloud Scheduler API](https://console.cloud.google.com/apis/library/cloudscheduler.googleapis.com)
-  - [Prefect Cloud](https://app.prefect.cloud/auth/sign-up) account (Free tier is sufficient)
-  - [Pulumi Cloud](https://app.pulumi.com/signup) account (Free tier is sufficient)
-  - [Webshare.io](https://www.webshare.io/?referral_code=1omcktoaxbhl) to avoid IP blocking and rate limits ($9/month for 3GB bandwidth is enough for 2 days of data extraction)
-  - [Cloudflare](https://dash.cloudflare.com/sign-up) account to deploy the dashboard (free tier is sufficient)
-- Tools:
-  - [git](https://git-scm.com/install/) for cloning the repo
-  - [mise](https://mise.jdx.dev/) for installing the necessary tools (if using bash shell install with `curl https://mise.run/bash | sh`)
-    - Google Cloud CLI (`gcloud`) for authentication
-    - Pulumi CLI for provisioning infrastructure
-  - [uv](https://docs.astral.sh/uv/getting-started/installation)
-  - [Docker](https://docs.docker.com/engine/install/)
-
-### 2. Setup & Running the pipeline
-
-```bash
-# 1. Get the code
-git clone https://github.com/CarlosGTrejo/CS2-Market-Analysis.git
-cd CS2-Market-Analysis
-
-# 2. Use mise to install gcloud and pulumi
-mise i
-
-# 2. Authenticate local machine with Google Cloud
-#    if you have already initialized gcloud and have muliple projects
-#    use `gcloud config set project PROJECT_ID` to switch to the correct project
-gcloud init
-gcloud auth application-default login
-
-# 2b. Enable required APIs
-gcloud services enable \
-  compute.googleapis.com \
-  artifactregistry.googleapis.com \
-  secretmanager.googleapis.com \
-  run.googleapis.com \
-  cloudscheduler.googleapis.com \
-  --project=cs2-market-analytics-pipeline
-
-# 3. Fill in the specific API keys
-cp .env.example .env
-nano .env
-
-# 4. Install python dependencies
-uv sync --locked
-
-# 5. Authenticate with Pulumi
-pulumi login
-
-# 6. Authenticate with Prefect Cloud (follow interactive prompts)
-uv run prefect cloud login
-
-# 7. Stand up the GCP infrastructure (GCS, BigQuery, Artifact Registry, Cloud Run Job, Cloud Scheduler)
-# (Pulumi will automatically use the gcloud credentials from step 2)
-uv run --env-file .env pulumi up -C infra/
-
-# 8. Configure Docker auth for the Artifact Registry host created by infra
-AR_HOST="$(uv run pulumi stack output artifact_registry_url -C infra | cut -d/ -f1)"
-
-# For powershell:
-# $AR_HOST = ((uv run pulumi stack output artifact_registry_url -C infra) -split '/')[0]
-
-gcloud auth configure-docker "$AR_HOST"
-
-# 9. Build, push, and deploy the Docker image to Cloud Run
-# (The deployment script builds the Docker image, pushes it to Artifact Registry, and updates the Cloud Run Job to use the new image)
-# Requires a reachable Docker daemon and a BuildKit-capable builder.
-DOCKER_BUILDKIT=1 uv run --env-file .env flows/deploy.py
-
-# For Powershell:
-# $env:DOCKER_BUILDKIT=1; uv run --env-file .env flows/deploy.py
-
-
-# Execute a run manually with:
-JOB_NAME="$(uv run pulumi stack output cloud_run_job_name -C infra)"
-JOB_REGION="$(uv run pulumi stack output cloud_run_job_location -C infra)"
-gcloud run jobs execute "$JOB_NAME" --region "$JOB_REGION"
-
-# For Powershell:
-# $JOB_NAME = $(uv run pulumi stack output cloud_run_job_name -C infra)
-# $JOB_REGION = $(uv run pulumi stack output cloud_run_job_location -C infra)
-# gcloud run jobs execute $JOB_NAME --region $JOB_REGION
-
-
-# View the status of the job execution with:
-gcloud run jobs executions list --job "$JOB_NAME" --region "$JOB_REGION"
-
-# For Powershell:
-# gcloud run jobs executions list --job $JOB_NAME --region $JOB_REGION
-
-# View the Prefect Cloud dashboard to monitor with:
-uv run --env-file .env prefect dashboard open
-```
-
----
-
-## 5. Project Structure
+## 4. Project Structure
 
 ```
 CS2-Market-Analysis/
@@ -409,6 +432,28 @@ CS2-Market-Analysis/
 
 ---
 
+## 5. Technical Decisions & Trade-Offs
+
+Building an automated, serverless pipeline for 31,000+ items required balancing performance, security, and observability. Here are the key architectural decisions made during development:
+
+### 5.1. Navigating Rate Limits and Scale (dlt + Proxies)
+* **The Challenge:** Steam's REST APIs are heavily paginated and enforce strict rate limits, making it difficult to extract the entire 31,000+ item catalog reliably.
+* **The Solution:** The extraction phase utilizes `dlt`'s built-in `rest_api_source` paired with the `offset` paginator and a custom `requests` session. By leveraging Webshare.io rotating proxies into the session and suppressing default HTTP error handling, the pipeline gracefully navigates rate limits without dropping connections or requiring complex custom backoff logic.
+
+### 5.2. Keyless Authentication via ADC (Security & DX)
+* **The Challenge:** Managing static JSON Service Account keys across multiple tools (Pulumi, Prefect, dlt, dbt) creates friction, security vulnerabilities, and deployment headaches.
+* **The Solution:** The project implements a frictionless, "keyless" design using Google Cloud's Application Default Credentials (ADC). 
+    * Locally, tools authenticate via `gcloud auth application-default login`, allowing them to seamlessly inherit credentials from the local environment without handling JSON keys.
+    * In production, Pulumi provisions a dedicated Service Account and attaches it directly to the Cloud Run compute instance. 
+    * By configuring dbt to use `method: oauth` and leaving `dlt`'s destination credentials empty, the tools implicitly inherit permissions from the compute environment via the GCP Metadata Server. Zero manual JSON keys are handled by the user.
+
+### 5.3. Prioritizing Observability Over Micro-Optimizations (Prefect + dbt Core)
+* **The Challenge:** Integrating dbt transformations with ingestion (`dlt`) and orchestration (`Prefect`) presented multiple paths: using dlt's native dbt runner, switching to dbt Fusion for raw speed, or treating dbt as first-class Prefect tasks.
+* **The Solution:** After initial friction with recurring installation and dependency issues in other orchestrators like Bruin, the pipeline was standardized on Prefect. `prefect-dbt` was chosen to execute standard dbt Core inside the Cloud Run container. 
+    * *Trade-off:* While `dlt`'s runner or `dbt Fusion` could marginally improve execution speed or simplify setup, the pipeline is highly network-bound during the extraction phase, not the transformation phase. Therefore, micro-optimizing dbt execution speed was not worth sacrificing the granular retries, lineage tracking, and UI observability that `prefect-dbt` provides when a specific model fails.
+
+---
+
 ## 6. Future Improvements
 
 - Use CI/CD (GitHub Actions) to automate deployments on code changes
@@ -416,22 +461,16 @@ CS2-Market-Analysis/
 - Leverage dbt cloud for improved observability
 - Implement notifications and alerting for pipeline failures and runs
 - Modify Pulumi code to provision a Cloudflare API Token and save it to Google Secret Manager, then pull it in the last Prefect task for deployments to Cloudflare Workers
-- At the top of the pulumi script, add a check to verify that all environment variables are set
-- Allow user to deploy dashboard to a dev environment to test changes before pushing to prod
 - Add a categorical filter to the table for item types (All, Cases, Stickers, Agents, Weapons, etc.)
-
 
 ---
 
-<details>
-<summary></summary>
-
-## Resources & References
+## 7. Resources & References
 
 - Prefect:
   - [Run flows on serverless compute (Google Cloud Run Push)](https://docs.prefect.io/v3/how-to-guides/deployment_infra/serverless#google-cloud-run)
 - Pulumi:
-  - [Configure Acccess to GCP (env vars)](https://www.pulumi.com/docs/iac/get-started/gcp/configure/)
+  - [Configure Access to GCP (env vars)](https://www.pulumi.com/docs/iac/get-started/gcp/configure/)
 - Steam API:
   - get CS2 market items: https://steamcommunity.com/market/search/render/?query=&start=0&count=10&search_descriptions=0&sort_column=name&sort_dir=asc&appid=730&norender=1
   - get item median price history: https://steamcommunity.com/market/pricehistory/?appid=APPID&market_hash_name=ITEMNAME
@@ -448,82 +487,3 @@ CS2-Market-Analysis/
     - BigQuery Data Editor
     - BigQuery Job User
     - BigQuery User
-
----
-
-<!-- Task Log -->
-<!-- Checkbox Legend
-- [/] In progress
-- [-] Cancelled
-- [>] Deferred
-- [?] Question
-- [!] Important
-- [*] Star/highlight
--->
-
-- [x] Initialize **Python** project with `uv init`
-- [x] Add **Python dependencies** for:
-  - [x] development: `uv add --dev prefect pulumi pulumi-gcp`
-  - [x] extract_load pipeline:
-    - `uv add "dlt[filesystem,gs,parquet]"`
-    - `uv add --group inspection marimo "dlt[workspace]"`
-  - [x] transform pipeline:
-    - `uv add "prefect[dbt]" dbt-bigquery`
-- [x] Create pipelines
-  - [x] dlt pipeline for cs2 market items (extract & load to GCS/BigQuery)
-  - [x] dlt pipeline for cs2 market item price history (extract & load to GCS/BigQuery)
-  - [x] dbt transformations for cleaned and modeled tables in BigQuery
-    - [x] items staging model
-    - [x] item price history staging model
-    - [x] add documentation and tests to dbt models
-- [x] Initialize **dbt** project
-  - [x] Add BigQuery adapter
-- [x] Initialize **Prefect** project with `prefect init`
-- [x] Create prefect workflow
-  - [x] Task to run dlt pipeline (extract & load)
-  - [x] Task to run dbt transformations
-  - [x] Create **Dockerfile** for Prefect workers that includes dlt, dbt, and flow code
-  - [x] Write Prefect deployment script to build Docker image and deploy flow to Prefect Cloud
-- [x] Initialize **Pulumi** project with `pulumi new gcp-python`
-- [x] Write Pulumi code to **provision infrastructure**:
-  - [x] GCS bucket for data lake
-  - [x] BigQuery dataset for data warehouse
-  - [x] BigQuery external tables pointing to raw data in GCS Bucket
-  - [x] Service accounts with least privilege for dlt and dbt
-    - dbt service account permissions:
-      - BigQuery Data Editor
-      - BigQuery Job User
-      - BigQuery User
-    - dlt service account permissions:
-      - storage.objectAdmin (for writing to GCS)
-  - [x] Google Artifact Registry for container images (for Cloud Run Push)
-- [x] Verify Pulumi provisioning works and infrastructure is set up correctly
-- [x] Explore using **mise** to install all tools needed for the project.
-- [x] README:
-  - [x] Mention data volume and how it impacts our decisions
-    - 31,000+ items, each with 4,000+ historical price points, results in 124 million+ records
-    - 3,100 requests just to get the item list, and 31,000+ requests to get price history (rate limits are a concern). Daily requests: 34,000+ just to keep data up to date.
-    - ~440KB per page for item list and items' history = 1.364GB of requested data per day.
-  - [x] Explain choices and decision of our stack and deployment strategy.
-    - even though dlt can create the datasets automatically, we are creating them with Pulumi to have better control and visibility over permissions and configurations.
-  - [x] Explain our problem statement in the README
-- [-] Investigate if our dlt pipeline properly handles retrying and resuming from failures. Do we need a dlt Runner?
-  - dlt Runners require a license, the pipeline already handles retries by default. We just have to persist the pipeline dir.
-- [x] make sure that the bucket_url env variable is available to dlt (DESTINATION__FILESYSTEM__BUCKET_URL="gs://your-staging-bucket")
-- [x] Add bun and deps and optimize Dockerfile to build dashboard and deploy it
-
-
-```py
-# consider batch yielding if throughput is low.
-BATCH_SIZE = 1000
-current_batch = []
-for data_point in price_history:
-    current_batch.append({ ... })
-    if len(current_batch) >= BATCH_SIZE:
-        yield current_batch
-        current_batch = []
-if current_batch:
-    yield current_batch
-```
-
-</details>
