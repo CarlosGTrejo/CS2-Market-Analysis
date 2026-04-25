@@ -63,7 +63,7 @@ INTO
 
   <div class="card">
     <h2>Total Estimated Trade Volume</h2>
-    <span class="big" style="color: var(--theme-foreground-focus);">$${Number(current_market_metrics?.total_estimated_trade_volume_usd || 0).toFixed(2)}</span>
+    <span class="big" style="color: var(--theme-foreground-focus);">$${Number(current_market_metrics?.total_estimated_trade_volume_usd || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
     <h3><i>* Calculated using median sales data</i></h3>
   </div>
 

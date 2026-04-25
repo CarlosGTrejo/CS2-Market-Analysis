@@ -208,9 +208,8 @@ This project uses the following stack:
   - Provisioning GCP resources: Google Cloud Storage (GCS), BigQuery, Artifact Registry, and Service Accounts
 * **Orchestration** | [Prefect](https://www.prefect.io/)
   - Defines and orchestrates the execution of dlt pipelines and dbt transformations
-  - Workflows are executed as Cloud Run Jobs, not via Prefect agents or work pools
   - Uses a custom deployment script to build and push Docker images, then updates the Cloud Run Job to use the new image
-  - Cloud Scheduler triggers the Cloud Run Job on a schedule
+  - Instead of relying on Prefect agents or work pools, workflows are executed as Cloud Run Jobs, triggered by Google Cloud Scheduler for daily runs. Prefect is used primarily for orchestrating the flow and providing observability into task runs, retries, and logs.
 * **Data Extraction/Loading (EL)** | [dlt](https://dlthub.com/)
   - Extracts data from Steam's REST APIs for CS2 market items and price history using proxy rotation and pagination
   - Normalizes and loads raw data into GCS (data lake) as Parquet files for staging
