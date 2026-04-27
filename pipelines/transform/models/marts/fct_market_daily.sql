@@ -16,7 +16,11 @@ stg_items as (
     select * from {{ ref('stg_items') }}
     {% if is_incremental() %}
         -- Only process the days that are being run
-        where snapshot_date >= (select coalesce(max(market_date), '1970-01-01') from {{ this }})
+        where snapshot_date >= (
+            select coalesce(max(market_date), '1970-01-01') 
+            from {{ this }}
+            where market_date >= '1970-01-01'
+        )
     {% endif %}
 ),
 

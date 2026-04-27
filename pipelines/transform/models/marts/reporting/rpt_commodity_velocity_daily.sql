@@ -17,6 +17,7 @@ fct_market_daily as (
 
     {% if is_incremental() %}
         where market_date >= (select coalesce(max(market_date), '1970-01-01') from {{ this }})
+          and market_date >= '1970-01-01'
     {% else %}
         where market_date >= '2000-01-01'
     {% endif %}

@@ -17,6 +17,7 @@ fct_market_daily as (
     {% if is_incremental() %}
         -- Only scan the dates we need to update
         where market_date >= (select coalesce(max(market_date), '1970-01-01') from {{ this }})
+          and market_date >= '1970-01-01'
     {% else %}
         -- Satisfies BigQuery's require_partition_filter constraint for full refreshes
         where market_date >= '2000-01-01'

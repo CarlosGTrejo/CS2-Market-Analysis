@@ -168,6 +168,30 @@ gcp.secretmanager.SecretIamMember(
     ),
 )
 
+# Proxy URL via GCP Secret Manager
+proxy_url_secret = gcp.secretmanager.Secret(
+    "proxy-url-secret",
+    secret_id=f"proxy-url-{stack}",
+    replication=gcp.secretmanager.SecretReplicationArgs(
+        auto=gcp.secretmanager.SecretReplicationAutoArgs()
+    ),
+)
+
+gcp.secretmanager.SecretVersion(
+    "proxy-url-secret-version",
+    secret=proxy_url_secret.id,
+    secret_data=proxy_url,
+)
+
+gcp.secretmanager.SecretIamMember(
+    "proxy-url-accessor",
+    secret_id=proxy_url_secret.id,
+    role="roles/secretmanager.secretAccessor",
+    member=pulumi.Output.format(
+        "serviceAccount:{SA_email}", SA_email=pipeline_sa.email
+    ),
+)
+
 # 7. Cloud Run V2 Job
 placeholder_image = "us-docker.pkg.dev/cloudrun/container/job:latest"
 
@@ -195,10 +219,6 @@ envs = [
     gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
         name="BQ_DATASET_NAME",
         value=bq_dataset.dataset_id,
-    ),
-    gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
-        name="PROXY_URL",
-        value=proxy_url,
     ),
     gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
         name="PULUMI_STACK",
@@ -229,6 +249,19 @@ envs.append(
         value_source=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceArgs(
             secret_key_ref=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceSecretKeyRefArgs(
                 secret=cloudflare_api_token_secret.secret_id,
+                version="latest",
+            )
+        ),
+    )
+)
+
+# Inject Proxy URL
+envs.append(
+    gcp.cloudrunv2.JobTemplateTemplateContainerEnvArgs(
+        name="PROXY_URL",
+        value_source=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceArgs(
+            secret_key_ref=gcp.cloudrunv2.JobTemplateTemplateContainerEnvValueSourceSecretKeyRefArgs(
+                secret=proxy_url_secret.secret_id,
                 version="latest",
             )
         ),
