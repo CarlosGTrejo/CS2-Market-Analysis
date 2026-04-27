@@ -451,6 +451,13 @@ Building an automated, serverless pipeline for 31,000+ items required balancing 
 * **The Solution:** After initial friction with recurring installation and dependency issues in other orchestrators like Bruin, the pipeline was standardized on Prefect. `prefect-dbt` was chosen to execute standard dbt Core inside the Cloud Run container. 
     * *Trade-off:* While `dlt`'s runner or `dbt Fusion` could marginally improve execution speed or simplify setup, the pipeline is highly network-bound during the extraction phase, not the transformation phase. Therefore, micro-optimizing dbt execution speed was not worth sacrificing the granular retries, lineage tracking, and UI observability that `prefect-dbt` provides when a specific model fails.
 
+### 5.4. Data Warehouse Optimizations (BigQuery + dbt)
+* **The Challenge:** Processing and querying a daily snapshot of 31,000+ items (and their historical metrics) can quickly become expensive and slow in a columnar data warehouse like BigQuery if full table scans occur on every run or dashboard load.
+* **The Solution:** The `dbt` models implement several BigQuery-specific optimizations to minimize bytes processed and execution time:
+    * **Partitioning:** Large fact tables (like `fct_market_daily`) and reporting models are partitioned by `market_date` at a monthly granularity. This ensures that queries filtering for specific dates only scan relevant partitions rather than the entire historical dataset. We enforce this cost-saving measure in production by setting `require_partition_filter=True`, which guarantees that accidental full-table scans fail at compilation.
+    * **Clustering:** Tables are clustered by columns that are frequently used in `JOIN` conditions or `WHERE` clauses (e.g., `item_name`, `is_commodity`). Clustering automatically sorts the data within each partition, allowing BigQuery to efficiently skip irrelevant blocks during query execution.
+    * **Incremental Materializations:** Instead of rebuilding the entire data warehouse from scratch every day (`table` materialization), core fact and reporting models use `incremental` materializations with an `insert_overwrite` strategy. During a daily run, dbt only processes the new market snapshots and overwrites only the affected date partitions, drastically reducing compute costs and pipeline duration.
+
 ---
 
 ## 6. Future Improvements
