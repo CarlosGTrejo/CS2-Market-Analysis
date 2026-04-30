@@ -24,6 +24,7 @@ LIMIT 1
 
 ```js
 const market_date = new Date(current_market_metrics?.market_date);
+const market_date_local_str = market_date.toLocaleDateString('en-US', { timeZone: 'UTC' });
 ```
 
 ```sql id=commodity_metrics
@@ -98,7 +99,7 @@ INTO
   ```js
   Plot.plot({
     title: "Market Liquidity Profile",
-    subtitle: `${market_date.toLocaleDateString()}`,
+    subtitle: `${market_date_local_str}`,
     grid: true,
     color: {
       legend: true,
@@ -144,7 +145,7 @@ INTO
   ```js
   Plot.plot({
     title: "Commodity Composition by Market Metrics",
-    subtitle: `${market_date.toLocaleDateString()}`,
+    subtitle: `${market_date_local_str}`,
     y: { 
       grid: true, 
       percent: true, // Formats the Y-axis labels as percentages (0-100%)
@@ -186,6 +187,10 @@ INTO
   </div>
 </div>
 
+<div class="card">
+
 ```js
 Inputs.table(commodity_breakdown)
 ```
+
+</div>

@@ -72,9 +72,6 @@ const selectedItems = (() => {
 })();
 ```
 
-<!-- vvvvv TODO: FIX or use different plot vvvvv -->
-
-
 <div class="grid grid-cols-2">
   <div class="card">
 

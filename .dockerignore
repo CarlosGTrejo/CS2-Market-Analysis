@@ -17,10 +17,10 @@ LICENSE
 .github
 
 # Observable Framework specific ignores
-.wrangler/
-dist/
-node_modules/
-.observablehq/
+**/.wrangler/
+**/dist/
+**/node_modules/
+**/.observablehq/
 
 # Only include the main flow file
 flows/
