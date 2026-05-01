@@ -50,7 +50,7 @@ ENV PATH="/app/dashboard/node_modules/.bin:/app/.venv/bin:$PATH"
 ENV DBT_PROFILES_DIR=/app/pipelines/transform
 
 # 1. Copy Node (for Wrangler because bun doesn't execute it correctly) AND Bun (for Prefect)
-COPY --from=node:20-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:24.15-slim /usr/local/bin/node /usr/local/bin/node
 COPY --from=oven/bun:latest /usr/local/bin/bun /usr/local/bin/bun
 
 # 2. Copy the compiled Python environment
