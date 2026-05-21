@@ -1,4 +1,4 @@
-# CS2 Market Analysis ELT Pipeline
+# End-To-End Market Data Pipeline
 
 ![Google Cloud Platform](https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare%20Workers-F48120?style=for-the-badge&logo=Cloudflare&logoColor=white)
@@ -10,7 +10,7 @@
 ![Bun](https://img.shields.io/badge/Bun-111?style=for-the-badge&logo=bun&logoColor=fff)
 ![Observable Framework](https://img.shields.io/badge/Observable_Framework-000000?style=for-the-badge&logo=observable&logoColor=white)
 
-An end-to-end, data engineering ELT pipeline for analyzing the CS2 market.
+An end-to-end, data engineering ELT pipeline to analyze the CS2 market.
 
 [![View Dashboard](https://img.shields.io/badge/%20-View%20Dashboard-2EA043?style=for-the-badge&logo=observable&logoColor=white)](https://cs2-market-dashboard.carlos-guadarrama-trejo.workers.dev/)
 
